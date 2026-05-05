@@ -4727,6 +4727,68 @@ prompt 内容必须是英文 booru 风格 tags，逗号分隔，覆盖：
 {{ENTRIES}}
 </image_context>`;
 
+// Pony 工作流专用模板（ponyMadness_v30 + 9 LoRA）
+const MP_IG_PONY_TEMPLATE = `<image_context>
+你是 {{char}}。当本轮回复涉及 {{user}} 通过手机短信请求自拍/照片，或者剧情自然产生需要视觉画面时，
+请按 st-image-auto-generation 插件的约定，在合适位置插入 <pic prompt="..."> 标签。
+
+⚠ 当前使用 **Pony 写实工作流**（ponyMadness_v30），请严格遵守：
+
+【质量前缀】prompt 必须以这段开头（顺序敏感，必须最前）：
+score_9, score_8_up, score_7_up, real photo, photorealistic, raw photo, detailed skin, 8k, sharp focus,
+
+【prompt 必须覆盖】
+- 角色外貌（hair color, eye color, body, age range）
+- 当前服装 / 是否裸露
+- 所处场景 / 背景 / 光线
+- 拍摄角度（selfie → "selfie, looking at viewer, holding phone, mirror selfie"；全身 → "full body shot, standing pose"）
+
+【LoRA 触发词】根据剧情上下文动态追加（**仅在场景明确符合时加，不要硬塞**）：
+- 角色是大胸设定 → large breasts, realistic breasts
+- 涉及女性下体特写 → innie pussy, pussy, detailed pussy
+- 全裸 / 上身裸 → nude, naked, topless
+- 性事后场景（喘息/汗/凌乱）→ after sex, sweat, flushed cheeks, messy hair, parted lips, exhausted
+- 高潮表情 → ahegao, tongue out, rolling eyes, drooling, heavy blush
+- 涉及精液 → cum, cum on face, cum on breasts, cum on body, cum dripping, facial
+- 自抓臀部姿势 → grabbing own ass, hands on ass, ass focus
+- 后入 / 抬臀视角 → from behind, peach pussy, pussy from behind, rear view, ass up, bent over
+
+【SFW 场景强制】如果剧情明显是日常 SFW（咖啡厅、上班、聊天等），请加 safe for work, dressed, fully clothed 类标签压制 NSFW 漏出。
+
+下面是与本场景/角色相关的世界书条目（mochi-phone 用户已挑选）：
+{{ENTRIES}}
+</image_context>`;
+
+// Noobai 工作流专用模板（noobaiXLNAIXL_vPred10Version + 1 detailer LoRA）
+const MP_IG_NOOBAI_TEMPLATE = `<image_context>
+你是 {{char}}。当本轮回复涉及 {{user}} 通过手机短信请求自拍/照片，或者剧情自然产生需要视觉画面时，
+请按 st-image-auto-generation 插件的约定，在合适位置插入 <pic prompt="..."> 标签。
+
+⚠ 当前使用 **Noobai 写真工作流**（noobaiXLNAIXL_vPred10Version，基于 Illustrious），请严格遵守：
+
+【质量前缀】prompt 必须以这段开头：
+masterpiece, best quality, newest, absurdres, highly detailed, real photo, photorealistic, raw photo, detailed skin,
+
+【绝不能用】score_9 / score_8_up 等 Pony 系列质量标签——会与 Illustrious 系底模冲突，画面崩。
+
+【prompt 必须覆盖】
+- 角色外貌（hair color, eye color, body, age range）
+- 当前服装 / 是否裸露
+- 所处场景 / 背景 / 光线
+- 拍摄角度（selfie → "selfie, looking at viewer, holding phone, mirror selfie"；全身 → "full body shot, standing pose"）
+
+【风格倾向】Noobai 偏亚洲/东亚向写真，2.5D 倾向。NSFW 内容直接用 booru 标签描述（nude, sex, oral 等），**无需特殊触发词**——只挂了一个 detailer LoRA，对所有图通用。
+
+下面是与本场景/角色相关的世界书条目（mochi-phone 用户已挑选）：
+{{ENTRIES}}
+</image_context>`;
+
+const MP_IG_PRESETS = Object.freeze({
+  default: { name: '通用', template: MP_IG_DEFAULT_TEMPLATE },
+  pony:    { name: 'Pony',  template: MP_IG_PONY_TEMPLATE },
+  noobai:  { name: 'Noobai', template: MP_IG_NOOBAI_TEMPLATE },
+});
+
 const MP_IG_DEFAULT_CFG = Object.freeze({
   enabled: false,
   selectedEntries: [],
@@ -5057,7 +5119,18 @@ function mpIgRenderTemplatePane() {
       <input type="number" id="ig-inj-depth" min="0" max="50" value="${parseInt(c.injectionDepth, 10) || 0}" style="width:100px"/>
     </div>
     <div class="rp-ig-field">
-      <button id="ig-template-reset" class="rp-ig-mini-btn">↺ 恢复默认模板</button>
+      <label>预设（按你正在用的 ComfyUI 工作流选）</label>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="rp-ig-mini-btn" data-preset="default">📥 通用</button>
+        <button class="rp-ig-mini-btn" data-preset="pony" style="background:#dbeafe;color:#1e40af">📥 Pony 写实 + 9 LoRA</button>
+        <button class="rp-ig-mini-btn" data-preset="noobai" style="background:#fce7f3;color:#9d174d">📥 Noobai 写真</button>
+      </div>
+      <div class="rp-ig-hint">
+        Pony 用 <code>score_9</code> 质量标签 + LoRA 触发词；Noobai 用 <code>masterpiece, absurdres</code>，两者标签不通用。<br/>
+        预设会**覆盖**当前模板内容，覆盖前请先保存或备份。
+      </div>
+    </div>
+    <div class="rp-ig-field">
       <button id="ig-template-preview" class="rp-ig-mini-btn">👁 预览注入内容</button>
     </div>
     <div id="ig-template-preview-out" style="display:none;margin-top:8px;padding:10px;background:rgba(0,0,0,.04);border-radius:6px;font-size:11px;white-space:pre-wrap;word-break:break-word;max-height:200px;overflow-y:auto"></div>
@@ -8708,13 +8781,19 @@ function bindUI() {
     e.stopPropagation();
     mpIgSave();
   });
-  // 模板 Tab：恢复默认 / 预览
-  $(document).on('click', '#rp-imagegen-modal #ig-template-reset', function(e) {
+  // 模板 Tab：预设按钮 / 预览
+  $(document).on('click', '#rp-imagegen-modal .rp-ig-pane[data-tab="template"] .rp-ig-mini-btn[data-preset]', function(e) {
     e.stopPropagation();
     if (!MP_IG_MODAL.cfg) return;
-    if (!confirm('恢复为默认指引模板？当前编辑会丢失。')) return;
-    MP_IG_MODAL.cfg.promptTemplate = MP_IG_DEFAULT_TEMPLATE;
+    const key = $(this).data('preset');
+    const preset = MP_IG_PRESETS[key];
+    if (!preset) return;
+    if (!confirm(`加载「${preset.name}」预设模板？当前编辑的模板会被覆盖。`)) return;
+    // 先把当前其他字段（启用/角色/深度）保留，只替换 promptTemplate
+    mpIgCollectFormIntoCfg();
+    MP_IG_MODAL.cfg.promptTemplate = preset.template;
     mpIgRenderTemplatePane();
+    mpIgToast(`已加载 ${preset.name} 预设`, true);
   });
   $(document).on('click', '#rp-imagegen-modal #ig-template-preview', function(e) {
     e.stopPropagation();
