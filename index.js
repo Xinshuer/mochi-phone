@@ -4709,22 +4709,30 @@ const EXT_KEY = 'ray_phone_v1'; // extension_settings 的命名空间键
 const SAVE_DEBOUNCE_MS = 500;
 
 // ================================================================
-//  IMAGE-GEN: 配置层 + 世界书读取（v1）
+//  IMAGE-GEN 上下文增强器（v2）
+//  与 st-image-auto-generation 配套：监听 CHAT_COMPLETION_PROMPT_READY，
+//  把用户勾选的世界书条目内容 + 自定义指引模板注入到 chat completion，
+//  让主 LLM 在生成 <pic prompt="..."> 时拥有 NPC 外貌/场景/服装等上下文。
 // ================================================================
+const MP_IG_DEFAULT_TEMPLATE = `<image_context>
+你是 {{char}}。当本轮回复涉及 {{user}} 通过手机短信请求自拍/照片，或者剧情自然产生需要展示视觉画面时，
+请按 st-image-auto-generation 插件的约定，在合适位置插入 <pic prompt="..."> 标签。
+prompt 内容必须是英文 booru 风格 tags，逗号分隔，覆盖：
+  - 角色外貌（hair color, eye color, body, age range）
+  - 当前服装（按下方 entries 与上下文判断）
+  - 所处场景 / 背景 / 光线
+  - 拍摄角度（selfie → "selfie, looking at viewer, holding phone, mirror selfie"；全身 → "full body shot, standing pose"）
+
+下面是与本场景/角色相关的世界书条目（mochi-phone 用户已挑选）：
+{{ENTRIES}}
+</image_context>`;
+
 const MP_IG_DEFAULT_CFG = Object.freeze({
   enabled: false,
-  apiUrl: 'https://api.deepseek.com/v1/chat/completions',
-  apiKey: '',
-  llmModel: 'deepseek-chat',
-  llmTemperature: 0.7,
-  llmMaxTokens: 600,
-  proxyUrl: 'http://10.212.154.97:7860',
-  selectedModel: 'noobaiXLNAIXL_vPred10Version.safetensors',
   selectedEntries: [],
-  triggerKeywords: ['自拍', '拍张照', '发个照片', '来张照片', '看看你', '发张图', 'selfie'],
-  chatHistoryDepth: 8,
-  positivePrefix: 'masterpiece, best quality, highres, ',
-  negativePrompt: 'worst quality, low quality, bad anatomy, watermark, text, blurry',
+  promptTemplate: MP_IG_DEFAULT_TEMPLATE,
+  injectionRole: 'system',  // system | user | assistant
+  injectionDepth: 0,        // 0 = 末尾，>0 从末尾往前数第 N 位
 });
 
 function mpGetImageGenCfg() {
@@ -4850,7 +4858,6 @@ const MP_IG_MODAL = {
   allEntries: [],             // 缓存的世界书条目
   expandedWorlds: new Set(),  // 已展开的分组
   searchQuery: '',
-  availableModels: [],        // 出图模型列表
 };
 
 function mpEscHtml(s) {
@@ -4876,16 +4883,15 @@ async function mpIgOpenModal() {
   MP_IG_MODAL.allEntries = [];
   MP_IG_MODAL.expandedWorlds = new Set();
   MP_IG_MODAL.searchQuery = '';
-  MP_IG_MODAL.availableModels = [];
 
   const $modal = $('#rp-imagegen-modal');
-  // 默认 active tab = api
+  // 默认 active tab = worldbook
   $modal.find('.rp-ig-tab').removeClass('active');
-  $modal.find('.rp-ig-tab[data-tab="api"]').addClass('active');
+  $modal.find('.rp-ig-tab[data-tab="worldbook"]').addClass('active');
   $modal.find('.rp-ig-pane').hide();
-  $modal.find('.rp-ig-pane[data-tab="api"]').show();
+  $modal.find('.rp-ig-pane[data-tab="worldbook"]').show();
 
-  mpIgRenderApiPane();
+  mpIgRenderWorldbookPane();
   $modal.show();
 }
 
@@ -4900,36 +4906,8 @@ function mpIgSwitchTab(tab) {
   $modal.find(`.rp-ig-tab[data-tab="${tab}"]`).addClass('active');
   $modal.find('.rp-ig-pane').hide();
   $modal.find(`.rp-ig-pane[data-tab="${tab}"]`).show();
-  if (tab === 'api') mpIgRenderApiPane();
-  else if (tab === 'worldbook') mpIgRenderWorldbookPane();
-  else if (tab === 'trigger') mpIgRenderTriggerPane();
-}
-
-function mpIgRenderApiPane() {
-  const c = MP_IG_MODAL.cfg;
-  const html = `
-    <div class="rp-ig-field">
-      <label>LLM API 地址</label>
-      <input type="text" id="ig-api-url" value="${mpEscAttr(c.apiUrl)}" placeholder="https://api.deepseek.com/v1/chat/completions"/>
-      <div class="rp-ig-hint">兼容 OpenAI 格式的 chat/completions 端点</div>
-    </div>
-    <div class="rp-ig-field">
-      <label>API Key</label>
-      <input type="password" id="ig-api-key" value="${mpEscAttr(c.apiKey)}" placeholder="sk-..."/>
-    </div>
-    <div class="rp-ig-field">
-      <label>LLM 模型名</label>
-      <input type="text" id="ig-llm-model" value="${mpEscAttr(c.llmModel)}" placeholder="deepseek-chat"/>
-    </div>
-    <div class="rp-ig-field">
-      <label>出图代理地址</label>
-      <input type="text" id="ig-proxy-url" value="${mpEscAttr(c.proxyUrl)}" placeholder="http://10.212.154.97:7860"/>
-      <div class="rp-ig-hint">本地 ComfyUI 代理服务，最终图片 URL 形如 <code>${mpEscHtml(c.proxyUrl)}/prompt/&lt;prompt&gt;?model=...</code></div>
-    </div>
-    <button id="ig-test-conn" class="rp-ig-mini-btn" style="background:#2563eb;color:#fff">测试 LLM 连接</button>
-    <span id="ig-test-result" style="margin-left:8px;font-size:12px"></span>
-  `;
-  $('#rp-imagegen-modal .rp-ig-pane[data-tab="api"]').html(html);
+  if (tab === 'worldbook') mpIgRenderWorldbookPane();
+  else if (tab === 'template') mpIgRenderTemplatePane();
 }
 
 async function mpIgRenderWorldbookPane() {
@@ -5046,146 +5024,74 @@ function mpIgPaintWorldbook() {
   $pane.html(html);
 }
 
-async function mpIgRenderTriggerPane() {
+function mpIgRenderTemplatePane() {
   const c = MP_IG_MODAL.cfg;
-  const $pane = $('#rp-imagegen-modal .rp-ig-pane[data-tab="trigger"]');
+  const $pane = $('#rp-imagegen-modal .rp-ig-pane[data-tab="template"]');
   $pane.html(`
     <div class="rp-ig-field">
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
         <input type="checkbox" id="ig-enabled" ${c.enabled ? 'checked' : ''}/>
-        <span>启用消息 App 内自动生图</span>
+        <span>启用上下文注入</span>
       </label>
+      <div class="rp-ig-hint">关闭后所有勾选的世界书条目都不会注入。配合 st-image-auto-generation 使用。</div>
     </div>
     <div class="rp-ig-field">
-      <label>触发关键词（逗号分隔）</label>
-      <textarea id="ig-keywords" rows="2">${mpEscHtml((c.triggerKeywords || []).join(', '))}</textarea>
-      <div class="rp-ig-hint">在消息文本前 30 字内匹配任一关键词时触发</div>
-    </div>
-    <div class="rp-ig-field">
-      <label>聊天历史深度：<span id="ig-depth-display">${c.chatHistoryDepth}</span> 条</label>
-      <input type="range" id="ig-depth" min="1" max="20" value="${c.chatHistoryDepth}" style="width:100%"/>
-      <div class="rp-ig-hint">取主聊天最近 N 条消息作为上下文（NPC 上一轮在干嘛）</div>
-    </div>
-    <div class="rp-ig-field">
-      <label>出图模型 <button id="ig-refresh-models" class="rp-ig-mini-btn" style="margin-left:8px">🔄 刷新</button></label>
-      <div id="ig-model-list">
-        <div style="color:#888;padding:8px 0;font-size:12px">点"刷新"从代理拉取模型列表</div>
+      <label>指引模板</label>
+      <textarea id="ig-template" rows="14">${mpEscHtml(c.promptTemplate || '')}</textarea>
+      <div class="rp-ig-hint">
+        支持占位符：<code>{{ENTRIES}}</code> 会被替换成上面勾选条目的内容；<code>{{user}}</code> / <code>{{char}}</code> 是酒馆内置宏。<br/>
+        提示模板里**不要**写 <code>&lt;pic prompt="..."&gt;</code> 的正则匹配规则——那个由 st-image-auto-generation 自己控制。
       </div>
-      <div class="rp-ig-hint">当前选中：${mpEscHtml(c.selectedModel || '(未选)')}</div>
     </div>
     <div class="rp-ig-field">
-      <label>正向 prompt 前缀</label>
-      <textarea id="ig-positive-prefix" rows="2">${mpEscHtml(c.positivePrefix || '')}</textarea>
-      <div class="rp-ig-hint">会拼在 LLM 产出的 image_prompt 前面（masterpiece、best quality 之类）</div>
+      <label>注入角色</label>
+      <select id="ig-inj-role">
+        <option value="system" ${c.injectionRole === 'system' ? 'selected' : ''}>system</option>
+        <option value="user" ${c.injectionRole === 'user' ? 'selected' : ''}>user</option>
+        <option value="assistant" ${c.injectionRole === 'assistant' ? 'selected' : ''}>assistant</option>
+      </select>
+      <div class="rp-ig-hint">通常用 system，少数模型用 user 服从更好</div>
     </div>
     <div class="rp-ig-field">
-      <label>负向 prompt</label>
-      <textarea id="ig-negative-prompt" rows="2">${mpEscHtml(c.negativePrompt || '')}</textarea>
+      <label>注入深度（0 = 末尾，>0 = 从末尾向前数第 N 位插入）</label>
+      <input type="number" id="ig-inj-depth" min="0" max="50" value="${parseInt(c.injectionDepth, 10) || 0}" style="width:100px"/>
     </div>
     <div class="rp-ig-field">
-      <label>LLM 温度</label>
-      <input type="number" id="ig-temperature" min="0" max="2" step="0.1" value="${c.llmTemperature}" style="width:80px"/>
+      <button id="ig-template-reset" class="rp-ig-mini-btn">↺ 恢复默认模板</button>
+      <button id="ig-template-preview" class="rp-ig-mini-btn">👁 预览注入内容</button>
     </div>
+    <div id="ig-template-preview-out" style="display:none;margin-top:8px;padding:10px;background:rgba(0,0,0,.04);border-radius:6px;font-size:11px;white-space:pre-wrap;word-break:break-word;max-height:200px;overflow-y:auto"></div>
   `);
-
-  // 渲染已缓存的模型列表
-  if (MP_IG_MODAL.availableModels.length > 0) {
-    mpIgPaintModelList();
-  }
-}
-
-function mpIgPaintModelList() {
-  const $list = $('#rp-imagegen-modal #ig-model-list');
-  const cur = MP_IG_MODAL.cfg.selectedModel;
-  if (MP_IG_MODAL.availableModels.length === 0) {
-    $list.html('<div style="color:#888;padding:8px 0;font-size:12px">无可用模型</div>');
-    return;
-  }
-  $list.html(MP_IG_MODAL.availableModels.map(m => `
-    <label class="rp-ig-model-row ${m === cur ? 'selected' : ''}">
-      <input type="radio" name="ig-model-radio" value="${mpEscAttr(m)}" ${m === cur ? 'checked' : ''}/>
-      <span style="word-break:break-all">${mpEscHtml(m)}</span>
-    </label>
-  `).join(''));
-}
-
-async function mpIgRefreshModels() {
-  const c = MP_IG_MODAL.cfg;
-  const $list = $('#rp-imagegen-modal #ig-model-list');
-  $list.html('<div style="color:#888;padding:8px 0;font-size:12px">加载中...</div>');
-  try {
-    const url = `${c.proxyUrl.replace(/\/$/, '')}/models`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    const arr = Array.isArray(data) ? data : (Array.isArray(data?.models) ? data.models : []);
-    MP_IG_MODAL.availableModels = arr.filter(x => typeof x === 'string');
-  } catch (e) {
-    console.warn('[mp:imageGen] /models failed:', e?.message);
-    MP_IG_MODAL.availableModels = [
-      'noobaiXLNAIXL_vPred10Version.safetensors',
-      'ponyMadness_v30.safetensors',
-    ];
-    mpIgToast('代理列表读取失败，已使用兜底列表', false);
-  }
-  mpIgPaintModelList();
-}
-
-async function mpIgTestConnection() {
-  const c = MP_IG_MODAL.cfg;
-  // 用表单当前值（用户可能改了但没保存）
-  const apiUrl = $('#ig-api-url').val().trim() || c.apiUrl;
-  const apiKey = $('#ig-api-key').val().trim() || c.apiKey;
-  const llmModel = $('#ig-llm-model').val().trim() || c.llmModel;
-  const $r = $('#ig-test-result');
-  $r.css('color', '#888').text('测试中...');
-  try {
-    const res = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: llmModel,
-        messages: [{ role: 'user', content: 'reply with the single word OK' }],
-        max_tokens: 8,
-        temperature: 0,
-      }),
-    });
-    if (!res.ok) {
-      const txt = await res.text().catch(() => '');
-      throw new Error(`HTTP ${res.status} ${txt.slice(0, 80)}`);
-    }
-    const data = await res.json();
-    const reply = data?.choices?.[0]?.message?.content || '';
-    $r.css('color', '#10b981').text(`✓ 通过：${reply.slice(0, 30)}`);
-  } catch (e) {
-    $r.css('color', '#e94560').text(`✗ ${e?.message || e}`);
-  }
 }
 
 function mpIgCollectFormIntoCfg() {
   const c = MP_IG_MODAL.cfg;
-  // API Tab
-  const $apiUrl = $('#ig-api-url'); if ($apiUrl.length) c.apiUrl = $apiUrl.val().trim() || MP_IG_DEFAULT_CFG.apiUrl;
-  const $apiKey = $('#ig-api-key'); if ($apiKey.length) c.apiKey = $apiKey.val();
-  const $llmModel = $('#ig-llm-model'); if ($llmModel.length) c.llmModel = $llmModel.val().trim() || MP_IG_DEFAULT_CFG.llmModel;
-  const $proxy = $('#ig-proxy-url'); if ($proxy.length) c.proxyUrl = $proxy.val().trim() || MP_IG_DEFAULT_CFG.proxyUrl;
-  // Trigger Tab
+  // Template Tab
   const $en = $('#ig-enabled'); if ($en.length) c.enabled = $en.is(':checked');
-  const $kw = $('#ig-keywords');
-  if ($kw.length) c.triggerKeywords = $kw.val().split(/[,，\n]/).map(s => s.trim()).filter(Boolean);
-  const $depth = $('#ig-depth'); if ($depth.length) c.chatHistoryDepth = parseInt($depth.val(), 10) || 8;
-  const $pp = $('#ig-positive-prefix'); if ($pp.length) c.positivePrefix = $pp.val();
-  const $np = $('#ig-negative-prompt'); if ($np.length) c.negativePrompt = $np.val();
-  const $temp = $('#ig-temperature');
-  if ($temp.length) {
-    const t = parseFloat($temp.val());
-    if (!isNaN(t)) c.llmTemperature = Math.max(0, Math.min(2, t));
+  const $tpl = $('#ig-template'); if ($tpl.length) c.promptTemplate = $tpl.val();
+  const $role = $('#ig-inj-role'); if ($role.length) c.injectionRole = $role.val() || 'system';
+  const $depth = $('#ig-inj-depth');
+  if ($depth.length) {
+    const d = parseInt($depth.val(), 10);
+    c.injectionDepth = isNaN(d) ? 0 : Math.max(0, Math.min(50, d));
   }
-  const $modelRadio = $('input[name="ig-model-radio"]:checked');
-  if ($modelRadio.length) c.selectedModel = $modelRadio.val();
+}
+
+async function mpIgPreviewInjection() {
+  // 收集当前表单值（用户可能改了模板还没保存）
+  mpIgCollectFormIntoCfg();
+  const c = MP_IG_MODAL.cfg;
+  const $out = $('#ig-template-preview-out');
+  $out.show().text('计算中...');
+  try {
+    mpIgInvalidateEntriesCache(); // 预览取最新
+    const all = await mpIgGetEntriesCached();
+    const entriesText = mpBuildEntriesText(c, all);
+    const filled = String(c.promptTemplate || '').replace(/\{\{ENTRIES\}\}/g, entriesText);
+    $out.text(filled || '(空)');
+  } catch (e) {
+    $out.text('预览失败: ' + (e?.message || e));
+  }
 }
 
 function mpIgSave() {
@@ -5196,256 +5102,78 @@ function mpIgSave() {
   setTimeout(() => mpIgCloseModal(), 600);
 }
 
-// ─── 图片生成主流程 ───
-const MP_IG_SYSTEM_PROMPT = `You are roleplaying as the NPC named "{NPC_NAME}". The user just asked you for a photo through their phone.
-
-Based on:
-1. The worldbook entries (NPC's appearance, location, clothing, personality) — provided below
-2. The recent chat history — provided below (this shows what the NPC was just doing)
-3. The user's request — for the angle / framing / style
-
-Produce:
-1. ONE OR TWO short in-character text replies that the NPC sends BEFORE the photo (in the same language the user wrote in).
-2. ONE English Stable-Diffusion booru-style image prompt that MUST reflect:
-   - the NPC's appearance from the worldbook (hair color, eye color, body, clothes)
-   - current scene / location from the chat context
-   - what the NPC was just doing (e.g. user told NPC to leave for work → workplace + work clothes, not bedroom pajamas)
-   - the requested angle (selfie → "selfie, looking at viewer, holding phone, mirror selfie"; full body → "full body shot, standing pose")
-
-Respond ONLY in this exact JSON format, no markdown fences, no extra commentary:
-{"texts": ["msg1", "msg2"], "image_prompt": "english tags here, comma separated"}`;
-
-function mpMatchesImageTrigger(text, keywords) {
-  if (!Array.isArray(keywords) || keywords.length === 0) return false;
-  if (!text) return false;
-  const head = String(text).slice(0, 30).toLowerCase();
-  return keywords.some(k => k && head.includes(String(k).toLowerCase()));
-}
-
-function mpPhoneToast(msg, ms = 2400) {
-  const $phone = $('#rp-phone');
-  if (!$phone.length) {
-    console.log('[mp:imageGen]', msg);
-    return;
-  }
-  const $t = $('<div></div>')
-    .text(msg)
-    .css({
-      position: 'absolute',
-      bottom: '70px',
-      left: '50%',
-      transform: 'translateX(-50%)',
-      background: 'rgba(20,20,40,0.92)',
-      color: '#fff',
-      padding: '8px 14px',
-      'border-radius': '8px',
-      'font-size': '12px',
-      'max-width': '85%',
-      'z-index': 9500,
-      'box-shadow': '0 2px 12px rgba(0,0,0,.4)',
-      'pointer-events': 'none',
-    });
-  $phone.append($t);
-  setTimeout(() => $t.remove(), ms);
-}
-
-function mpIgGenMsgId(prefix) {
-  return `${prefix || 'mpig'}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-}
-
-function mpBuildWorldbookContext(cfg, entries) {
+// ─── 上下文构造 + chat completion 注入 ───
+function mpBuildEntriesText(cfg, entries) {
   if (!Array.isArray(cfg.selectedEntries) || cfg.selectedEntries.length === 0) {
-    return '(用户未选择任何世界书条目)';
+    return '(用户未挑选任何世界书条目)';
   }
   const selectedSet = new Set(cfg.selectedEntries);
   const matched = (entries || []).filter(e => selectedSet.has(e._stableId));
-  if (matched.length === 0) return '(选定的条目在当前世界书中均未找到)';
+  if (matched.length === 0) return '(已选条目在当前世界书中均不存在)';
   return matched.map(e => {
     const label = e.comment
       || (Array.isArray(e.key) ? e.key.filter(Boolean).join(', ') : (e.key || ''))
       || `(uid=${e.uid})`;
-    return `[Entry: ${label}]\n${(e.content || '').trim()}`;
+    return `[${label}]\n${(e.content || '').trim()}`;
   }).join('\n\n');
 }
 
-function mpBuildChatHistoryContext(depth) {
-  try {
-    const ctx = (typeof getContext === 'function') ? getContext() : null;
-    if (!ctx || !Array.isArray(ctx.chat) || ctx.chat.length === 0) return '(无聊天历史)';
-    const last = ctx.chat.slice(-Math.max(1, depth || 8));
-    return last.map(m => {
-      const speaker = m.is_user ? (ctx.name1 || 'User') : (m.name || 'NPC');
-      // 移除 <PHONE>/HTML 噪声，截断
-      const raw = String(m.mes || '')
-        .replace(/<PHONE>[\s\S]*?<\/PHONE>/gi, '')
-        .replace(/<[^>]+>/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-      return `${speaker}: ${raw.slice(0, 600)}`;
-    }).join('\n');
-  } catch (e) {
-    console.warn('[mp:imageGen] chat history read failed:', e?.message);
-    return '(聊天历史读取失败)';
+let _mpIgEntriesCache = { ts: 0, list: null };
+async function mpIgGetEntriesCached() {
+  const now = Date.now();
+  if (_mpIgEntriesCache.list && (now - _mpIgEntriesCache.ts) < 60_000) {
+    return _mpIgEntriesCache.list;
   }
+  const list = await mpGatherAllWorldEntries();
+  _mpIgEntriesCache = { ts: now, list };
+  return list;
+}
+function mpIgInvalidateEntriesCache() {
+  _mpIgEntriesCache = { ts: 0, list: null };
 }
 
-async function mpCallImageGenLLM(systemPrompt, userPrompt, cfg) {
-  if (!cfg.apiUrl) throw new Error('未配置 API 地址');
-  if (!cfg.apiKey) throw new Error('未配置 API Key');
-  const body = {
-    model: cfg.llmModel || 'deepseek-chat',
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt },
-    ],
-    temperature: typeof cfg.llmTemperature === 'number' ? cfg.llmTemperature : 0.7,
-    max_tokens: cfg.llmMaxTokens || 600,
-  };
-  // 仅 DeepSeek/OpenAI 支持 response_format json_object，加上更稳；端点不支持也只是被忽略或报 400
-  body.response_format = { type: 'json_object' };
-  const res = await fetch(cfg.apiUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${cfg.apiKey}`,
-    },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const txt = await res.text().catch(() => '');
-    // 若是 response_format 不支持的错误，去掉重试一次
-    if (res.status === 400 && /response_format/i.test(txt)) {
-      delete body.response_format;
-      const retry = await fetch(cfg.apiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${cfg.apiKey}` },
-        body: JSON.stringify(body),
-      });
-      if (!retry.ok) {
-        const t2 = await retry.text().catch(() => '');
-        throw new Error(`HTTP ${retry.status}: ${t2.slice(0, 100)}`);
-      }
-      const dataR = await retry.json();
-      return mpParseLLMJson(dataR?.choices?.[0]?.message?.content || '');
+async function mpIgOnPromptReady(eventData) {
+  try {
+    const cfg = mpGetImageGenCfg();
+    if (!cfg.enabled) return;
+    if (!cfg.promptTemplate || !cfg.promptTemplate.trim()) return;
+    if (!eventData || !Array.isArray(eventData.chat)) return;
+
+    const entries = await mpIgGetEntriesCached();
+    const entriesText = mpBuildEntriesText(cfg, entries);
+
+    const filled = String(cfg.promptTemplate).replace(/\{\{ENTRIES\}\}/g, entriesText);
+    if (!filled.trim()) return;
+
+    const role = (cfg.injectionRole === 'user' || cfg.injectionRole === 'assistant')
+      ? cfg.injectionRole : 'system';
+    const depth = parseInt(cfg.injectionDepth, 10) || 0;
+    const msg = { role, content: filled };
+
+    if (depth <= 0) {
+      eventData.chat.push(msg);
+    } else {
+      // 与 st-image-auto-generation 一致：从末尾往前数 depth 位置插入
+      const idx = Math.max(0, eventData.chat.length - depth);
+      eventData.chat.splice(idx, 0, msg);
     }
-    throw new Error(`HTTP ${res.status}: ${txt.slice(0, 100)}`);
-  }
-  const data = await res.json();
-  const raw = data?.choices?.[0]?.message?.content || '';
-  return mpParseLLMJson(raw);
-}
-
-function mpParseLLMJson(raw) {
-  if (!raw) throw new Error('LLM 返回为空');
-  let cleaned = String(raw).trim();
-  // 去掉 ```json ... ``` 围栏
-  const fenceMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-  if (fenceMatch) cleaned = fenceMatch[1];
-  // 取第一个 { 到最后一个 }
-  const firstBrace = cleaned.indexOf('{');
-  const lastBrace = cleaned.lastIndexOf('}');
-  if (firstBrace >= 0 && lastBrace > firstBrace) {
-    cleaned = cleaned.slice(firstBrace, lastBrace + 1);
-  }
-  let obj;
-  try {
-    obj = JSON.parse(cleaned);
+    console.log(`[mp:imageGen] injected entries (${cfg.selectedEntries.length} selected) role=${role} depth=${depth}`);
   } catch (e) {
-    throw new Error('LLM JSON 解析失败: ' + e.message);
+    console.warn('[mp:imageGen] CHAT_COMPLETION_PROMPT_READY 注入失败:', e?.message || e);
   }
-  if (typeof obj.image_prompt !== 'string' || !obj.image_prompt.trim()) {
-    throw new Error('LLM 未返回有效的 image_prompt');
-  }
-  if (!Array.isArray(obj.texts)) obj.texts = [];
-  obj.texts = obj.texts.filter(t => typeof t === 'string' && t.trim()).slice(0, 3);
-  return obj;
 }
 
-function mpBuildImageProxyUrl(imagePrompt, cfg) {
-  const proxy = String(cfg.proxyUrl || 'http://10.212.154.97:7860').replace(/\/$/, '');
-  const fullPrompt = (cfg.positivePrefix || '') + imagePrompt;
-  const params = new URLSearchParams();
-  if (cfg.selectedModel) params.set('model', cfg.selectedModel);
-  if (cfg.negativePrompt) params.set('negative', cfg.negativePrompt);
-  const qs = params.toString();
-  return `${proxy}/prompt/${encodeURIComponent(fullPrompt)}${qs ? '?' + qs : ''}`;
-}
-
-async function mpHandleImageRequest(rawText, threadId) {
-  const cfg = mpGetImageGenCfg();
-  const th = STATE.threads[threadId];
-  if (!th) throw new Error('当前聊天线程不存在');
-  const npcName = th.name || 'NPC';
-  const ts = (typeof resolvePhoneTime === 'function') ? resolvePhoneTime() : '';
-
-  // 1. 立刻把用户消息推到 UI
-  th.messages.push({ from: 'user', text: rawText, time: ts });
-
-  // 2. 占位"拍照中"气泡（普通文字气泡，避免触发智绘姬链路）
-  const placeholderId = mpIgGenMsgId('placeholder');
-  th.messages.push({
-    id: placeholderId,
-    from: th.name,
-    text: '📷 拍照中…',
-    time: ts,
-    _mpIgPlaceholder: true,
-  });
-  renderBubbles(threadId);
-  updatePreviews();
-  saveState();
-
-  // 3. 收集上下文 + 调 LLM
-  let parsed;
-  try {
-    const allEntries = await mpGatherAllWorldEntries();
-    const wbText = mpBuildWorldbookContext(cfg, allEntries);
-    const chatText = mpBuildChatHistoryContext(cfg.chatHistoryDepth);
-    const sys = MP_IG_SYSTEM_PROMPT.replace(/\{NPC_NAME\}/g, npcName);
-    const user =
-`## Worldbook entries
-${wbText}
-
-## Recent chat history
-${chatText}
-
-## User just sent NPC "${npcName}" via phone:
-${rawText}
-
-Respond now in the JSON format described in the system message.`;
-    parsed = await mpCallImageGenLLM(sys, user, cfg);
-  } catch (err) {
-    // 移除占位
-    const idx = th.messages.findIndex(m => m && m.id === placeholderId);
-    if (idx >= 0) th.messages.splice(idx, 1);
-    renderBubbles(threadId);
-    updatePreviews();
-    saveState();
-    throw err;
+function mpIgInstallPromptInjector() {
+  if (window._mpIgPromptInjectorInstalled) return;
+  const es = window.eventSource || (window.SillyTavern && window.SillyTavern.eventSource);
+  const et = window.event_types || (window.SillyTavern && window.SillyTavern.eventTypes);
+  if (!es || !et || !et.CHAT_COMPLETION_PROMPT_READY) {
+    console.warn('[mp:imageGen] eventSource / event_types 未就绪，注入器未挂载');
+    return;
   }
-
-  // 4. 替换占位为：N 条 NPC 文字 + 1 条图片
-  const idx = th.messages.findIndex(m => m && m.id === placeholderId);
-  if (idx >= 0) th.messages.splice(idx, 1);
-
-  const tsAfter = (typeof resolvePhoneTime === 'function') ? resolvePhoneTime() : ts;
-  (parsed.texts || []).forEach(t => {
-    th.messages.push({ from: th.name, text: t, time: tsAfter });
-  });
-  const imgUrl = mpBuildImageProxyUrl(parsed.image_prompt, cfg);
-  th.messages.push({
-    id: mpIgGenMsgId('mpigimg'),
-    from: th.name,
-    type: 'image',
-    src: imgUrl,
-    prompt: parsed.image_prompt,  // 保留以便日后调试，但因为是 type:image 不会触发智绘姬
-    time: tsAfter,
-    _mpIgGenerated: true,
-  });
-
-  renderBubbles(threadId);
-  updatePreviews();
-  saveState();
-  console.log('[mp:imageGen] ✓ 注入完成 npc=', npcName, 'prompt=', parsed.image_prompt.slice(0, 80));
+  es.on(et.CHAT_COMPLETION_PROMPT_READY, mpIgOnPromptReady);
+  window._mpIgPromptInjectorInstalled = true;
+  console.log('[mp:imageGen] CHAT_COMPLETION_PROMPT_READY 注入器已挂载');
 }
 
 function makeLightweightPayload(payload) {
@@ -6728,14 +6456,14 @@ const HTML = `
               </div>
             </div>
 
-            <div class="rp-set-section-title">AI 图片生成</div>
+            <div class="rp-set-section-title">AI 图片生成 - 上下文增强</div>
             <div class="rp-set-section">
               <div class="rp-set-row">
-                <span class="rp-set-key">📷 自拍 / 拍照设置</span>
+                <span class="rp-set-key">🎨 世界书 + 提示词</span>
                 <button id="rp-imagegen-open" class="rp-set-upload-btn">⚙️ 打开</button>
               </div>
               <div class="rp-set-row" style="flex-direction:column;align-items:stretch;gap:4px">
-                <div style="font-size:12px;color:#8a8a9a;line-height:1.5">在消息里向 NPC 说"自拍"等关键词时，自动调用 LLM 产 prompt + 通过本地 ComfyUI 代理出图。</div>
+                <div style="font-size:12px;color:#8a8a9a;line-height:1.5">挑选世界书条目（NPC 外貌 / 场景 / 服装），与自定义指引一起注入到主 LLM 的上下文，让它在产 <code>&lt;pic prompt="..."&gt;</code> 时知道 NPC 长啥样。<br/>需配合 <b>st-image-auto-generation</b> 插件出图。</div>
               </div>
             </div>
 
@@ -6751,14 +6479,12 @@ const HTML = `
               <button class="rp-imagegen-close" type="button">✕</button>
             </div>
             <div class="rp-imagegen-tabs">
-              <button class="rp-ig-tab active" data-tab="api">接口</button>
-              <button class="rp-ig-tab" data-tab="worldbook">世界书</button>
-              <button class="rp-ig-tab" data-tab="trigger">触发</button>
+              <button class="rp-ig-tab active" data-tab="worldbook">世界书条目</button>
+              <button class="rp-ig-tab" data-tab="template">指引模板</button>
             </div>
             <div class="rp-imagegen-body">
-              <div class="rp-ig-pane" data-tab="api"></div>
-              <div class="rp-ig-pane" data-tab="worldbook" style="display:none"></div>
-              <div class="rp-ig-pane" data-tab="trigger" style="display:none"></div>
+              <div class="rp-ig-pane" data-tab="worldbook"></div>
+              <div class="rp-ig-pane" data-tab="template" style="display:none"></div>
             </div>
             <div class="rp-imagegen-footer">
               <button class="rp-ig-cancel" type="button">取消</button>
@@ -7247,7 +6973,8 @@ async function init() {
   // FIX2: 监听聊天窗口切换
   if (liveES && liveET) liveES.on(liveET.CHAT_CHANGED, onChatChanged);
 
-
+  // ── AI 图片生成上下文增强器：挂载 CHAT_COMPLETION_PROMPT_READY 注入器 ──
+  try { mpIgInstallPromptInjector(); } catch(e) { console.warn('[mp:imageGen] install injector failed:', e); }
 
   // ── 智绘姬 MutationObserver 兜底 ──
   // 核心策略：显式等待队列（rpImgWaitQueue）
@@ -7804,7 +7531,8 @@ function onChatChanged() {
     } catch(e) { console.warn('[Phone] onChatChanged delayed error', e); }
   }, 600);
 
-  // ── AI 图片生成：检查已选条目是否仍在当前世界书 ──
+  // ── AI 图片生成：清世界书缓存 + 报告已选条目可用情况 ──
+  try { mpIgInvalidateEntriesCache(); } catch(_) {}
   setTimeout(async function() {
     try {
       if (STATE.chatId !== _expectedChatId) return;
@@ -8980,23 +8708,17 @@ function bindUI() {
     e.stopPropagation();
     mpIgSave();
   });
-  $(document).on('click', '#rp-imagegen-modal #ig-test-conn', function(e) {
+  // 模板 Tab：恢复默认 / 预览
+  $(document).on('click', '#rp-imagegen-modal #ig-template-reset', function(e) {
     e.stopPropagation();
-    mpIgTestConnection();
+    if (!MP_IG_MODAL.cfg) return;
+    if (!confirm('恢复为默认指引模板？当前编辑会丢失。')) return;
+    MP_IG_MODAL.cfg.promptTemplate = MP_IG_DEFAULT_TEMPLATE;
+    mpIgRenderTemplatePane();
   });
-  $(document).on('click', '#rp-imagegen-modal #ig-refresh-models', function(e) {
+  $(document).on('click', '#rp-imagegen-modal #ig-template-preview', function(e) {
     e.stopPropagation();
-    e.preventDefault();
-    mpIgRefreshModels();
-  });
-  // 触发 Tab：滑块实时显示
-  $(document).on('input', '#rp-imagegen-modal #ig-depth', function() {
-    $('#rp-imagegen-modal #ig-depth-display').text($(this).val());
-  });
-  // 触发 Tab：模型 radio
-  $(document).on('change', '#rp-imagegen-modal input[name="ig-model-radio"]', function() {
-    if (MP_IG_MODAL.cfg) MP_IG_MODAL.cfg.selectedModel = $(this).val();
-    mpIgPaintModelList();
+    mpIgPreviewInjection();
   });
   // 世界书 Tab：搜索
   $(document).on('input', '#rp-imagegen-modal #ig-wb-search', function() {
@@ -9925,28 +9647,6 @@ function sendSMS() {
   }
 
   if (!STATE.currentThread || STATE.pendingMessages.length === 0) return;
-
-  // ★ AI 图片生成拦截：单条消息 + 命中关键词 → 走独立流水
-  try {
-    const _igCfg = mpGetImageGenCfg();
-    const _curTh = STATE.threads[STATE.currentThread];
-    const _isGroupTh = _curTh && (_curTh.type === 'group' || String(_curTh.id || '').startsWith('grp_'));
-    if (_igCfg.enabled
-        && STATE.pendingMessages.length === 1
-        && !_isGroupTh
-        && _curTh
-        && mpMatchesImageTrigger(STATE.pendingMessages[0], _igCfg.triggerKeywords)) {
-      const _text = STATE.pendingMessages.shift();
-      renderPendingQueue();
-      mpHandleImageRequest(_text, STATE.currentThread).catch(err => {
-        console.error('[mp:imageGen] 处理失败:', err);
-        mpPhoneToast('图片生成失败：' + (err?.message || err));
-      });
-      return;
-    }
-  } catch (e) {
-    console.warn('[mp:imageGen] 拦截阶段异常，回落到原 sendSMS:', e);
-  }
 
   const th  = STATE.threads[STATE.currentThread];
   const ts  = resolvePhoneTime();
