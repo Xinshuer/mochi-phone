@@ -2151,6 +2151,59 @@ const RP_PHONE_CSS = `/* ── wrapper ── */
 .rp-dark #rp-block-input{background:rgba(255,255,255,.08)!important;color:#e0e4ff!important;border-color:rgba(255,255,255,.1)!important}
 .rp-set-avatar-preview{width:38px;height:38px;border-radius:19px;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff}
 
+/* ===== AI 图片生成模态 ===== */
+.rp-imagegen-modal{position:absolute;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center}
+.rp-imagegen-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(2px)}
+.rp-imagegen-panel{position:relative;width:92%;max-width:420px;max-height:88%;background:#fff;color:#222;border-radius:14px;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.45);overflow:hidden;font-size:13px}
+.rp-dark .rp-imagegen-panel{background:#1f1f2e;color:#dde}
+.rp-imagegen-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid rgba(0,0,0,.08);font-weight:600;font-size:15px}
+.rp-dark .rp-imagegen-header{border-bottom-color:rgba(255,255,255,.08)}
+.rp-imagegen-close{border:none;background:transparent;font-size:18px;cursor:pointer;color:inherit;padding:2px 8px;line-height:1}
+.rp-imagegen-tabs{display:flex;border-bottom:1px solid rgba(0,0,0,.08)}
+.rp-dark .rp-imagegen-tabs{border-bottom-color:rgba(255,255,255,.08)}
+.rp-ig-tab{flex:1;padding:10px 0;border:none;background:transparent;font-size:13px;cursor:pointer;color:#666;font-family:inherit;font-weight:500;border-bottom:2px solid transparent}
+.rp-dark .rp-ig-tab{color:#aab}
+.rp-ig-tab.active{color:#2563eb;border-bottom-color:#2563eb}
+.rp-dark .rp-ig-tab.active{color:#7090f0;border-bottom-color:#7090f0}
+.rp-imagegen-body{flex:1;overflow-y:auto;padding:14px;min-height:200px}
+.rp-imagegen-footer{padding:10px 14px;border-top:1px solid rgba(0,0,0,.08);display:flex;justify-content:flex-end;gap:8px}
+.rp-dark .rp-imagegen-footer{border-top-color:rgba(255,255,255,.08)}
+.rp-ig-cancel,.rp-ig-save{font-size:13px;padding:7px 16px;border-radius:8px;border:none;cursor:pointer;font-family:inherit}
+.rp-ig-cancel{background:rgba(0,0,0,.06);color:#333}
+.rp-dark .rp-ig-cancel{background:rgba(255,255,255,.08);color:#dde}
+.rp-ig-save{background:linear-gradient(135deg,#f472b6,#a855f7);color:#fff;font-weight:600}
+.rp-ig-field{margin-bottom:12px}
+.rp-ig-field label{display:block;font-size:12px;color:#666;margin-bottom:4px;font-weight:500}
+.rp-dark .rp-ig-field label{color:#aab}
+.rp-ig-field input[type=text],.rp-ig-field input[type=password],.rp-ig-field input[type=number],.rp-ig-field textarea,.rp-ig-field select{width:100%;box-sizing:border-box;padding:7px 10px;font-size:13px;border:1px solid rgba(0,0,0,.12);border-radius:6px;background:#fafaff;color:#222;outline:none;font-family:inherit}
+.rp-dark .rp-ig-field input,.rp-dark .rp-ig-field textarea,.rp-dark .rp-ig-field select{background:rgba(255,255,255,.06);color:#dde;border-color:rgba(255,255,255,.12)}
+.rp-ig-field textarea{resize:vertical;min-height:48px}
+.rp-ig-hint{font-size:11px;color:#888;margin-top:3px;line-height:1.4}
+.rp-dark .rp-ig-hint{color:#778}
+.rp-ig-row-toolbar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.rp-ig-mini-btn{font-size:12px;padding:5px 10px;border-radius:6px;border:none;cursor:pointer;background:rgba(0,0,0,.06);color:#333;font-family:inherit}
+.rp-dark .rp-ig-mini-btn{background:rgba(255,255,255,.08);color:#dde}
+.rp-ig-search{width:100%;box-sizing:border-box;padding:7px 10px;font-size:13px;border:1px solid rgba(0,0,0,.12);border-radius:6px;background:#fafaff;color:#222;outline:none;margin-bottom:8px;font-family:inherit}
+.rp-dark .rp-ig-search{background:rgba(255,255,255,.06);color:#dde;border-color:rgba(255,255,255,.12)}
+.rp-ig-group{border:1px solid rgba(0,0,0,.08);border-radius:8px;margin-bottom:8px;overflow:hidden}
+.rp-dark .rp-ig-group{border-color:rgba(255,255,255,.08)}
+.rp-ig-group-head{padding:8px 10px;background:rgba(0,0,0,.04);cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:600;user-select:none}
+.rp-dark .rp-ig-group-head{background:rgba(255,255,255,.04)}
+.rp-ig-group-count{color:#888;font-weight:400;font-size:11px}
+.rp-ig-entry{padding:7px 10px;border-top:1px solid rgba(0,0,0,.05);display:flex;gap:8px;align-items:flex-start;cursor:pointer}
+.rp-dark .rp-ig-entry{border-top-color:rgba(255,255,255,.05)}
+.rp-ig-entry input[type=checkbox]{margin-top:3px;flex-shrink:0}
+.rp-ig-entry-title{font-size:12px;font-weight:600;color:#222;word-break:break-word}
+.rp-dark .rp-ig-entry-title{color:#dde}
+.rp-ig-entry-preview{font-size:11px;color:#888;margin-top:2px;word-break:break-word;line-height:1.4}
+.rp-ig-entry-missing{font-size:11px;color:#e94560;margin-top:2px}
+.rp-ig-model-row{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid rgba(0,0,0,.08);border-radius:6px;margin-bottom:4px;cursor:pointer;font-size:12px}
+.rp-dark .rp-ig-model-row{border-color:rgba(255,255,255,.08)}
+.rp-ig-model-row.selected{background:rgba(37,99,235,.08);border-color:#2563eb}
+.rp-dark .rp-ig-model-row.selected{background:rgba(112,144,240,.12);border-color:#7090f0}
+.rp-ig-toast{position:absolute;top:12px;left:50%;transform:translateX(-50%);padding:8px 14px;border-radius:6px;font-size:12px;color:#fff;z-index:9100;pointer-events:none;animation:rpFadeIn .15s ease-out}
+@keyframes rpFadeIn{from{opacity:0;transform:translate(-50%,-6px)}to{opacity:1;transform:translate(-50%,0)}}
+
 /* ===== DIARY VIEW ===== */
 #rp-view-diary{background:transparent;display:flex;flex-direction:column;overflow:hidden}
 .rp-diary-gen-btn{background:none;border:none;cursor:pointer;color:var(--rp-nav-btn,#2563eb);width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:transform .3s;flex-shrink:0}
@@ -4655,6 +4708,746 @@ const _saveSettings = () => {
 const EXT_KEY = 'ray_phone_v1'; // extension_settings 的命名空间键
 const SAVE_DEBOUNCE_MS = 500;
 
+// ================================================================
+//  IMAGE-GEN: 配置层 + 世界书读取（v1）
+// ================================================================
+const MP_IG_DEFAULT_CFG = Object.freeze({
+  enabled: false,
+  apiUrl: 'https://api.deepseek.com/v1/chat/completions',
+  apiKey: '',
+  llmModel: 'deepseek-chat',
+  llmTemperature: 0.7,
+  llmMaxTokens: 600,
+  proxyUrl: 'http://10.212.154.97:7860',
+  selectedModel: 'noobaiXLNAIXL_vPred10Version.safetensors',
+  selectedEntries: [],
+  triggerKeywords: ['自拍', '拍张照', '发个照片', '来张照片', '看看你', '发张图', 'selfie'],
+  chatHistoryDepth: 8,
+  positivePrefix: 'masterpiece, best quality, highres, ',
+  negativePrompt: 'worst quality, low quality, bad anatomy, watermark, text, blurry',
+});
+
+function mpGetImageGenCfg() {
+  const root = _extSettings();
+  if (!root) return Object.assign({}, MP_IG_DEFAULT_CFG);
+  if (!root[EXT_KEY]) root[EXT_KEY] = {};
+  if (!root[EXT_KEY].imageGen) {
+    root[EXT_KEY].imageGen = Object.assign({}, MP_IG_DEFAULT_CFG);
+    _saveSettings();
+  } else {
+    // 兼容旧配置：补全缺失字段
+    const cur = root[EXT_KEY].imageGen;
+    let patched = false;
+    Object.keys(MP_IG_DEFAULT_CFG).forEach(k => {
+      if (cur[k] === undefined) {
+        cur[k] = Array.isArray(MP_IG_DEFAULT_CFG[k])
+          ? MP_IG_DEFAULT_CFG[k].slice()
+          : MP_IG_DEFAULT_CFG[k];
+        patched = true;
+      }
+    });
+    if (patched) _saveSettings();
+  }
+  return root[EXT_KEY].imageGen;
+}
+
+function mpSaveImageGenCfg(patch) {
+  const cur = mpGetImageGenCfg();
+  if (patch && typeof patch === 'object') Object.assign(cur, patch);
+  _saveSettings();
+  return cur;
+}
+
+function mpEntryStableId(entry, worldName) {
+  const w = worldName || entry?.world || 'unknown';
+  const uid = entry?.uid ?? entry?.id ?? entry?.UID ?? entry?.comment ?? entry?.key ?? '';
+  return `${w}::${uid}`;
+}
+
+async function mpGatherAllWorldEntries() {
+  const seen = new Map(); // stableId -> entry
+  const ctx = (typeof getContext === 'function') ? getContext() : null;
+
+  // 1. 当前角色卡绑定的世界书
+  try {
+    if (ctx && typeof ctx.loadWorldInfo === 'function') {
+      const charObj = (ctx.characters && ctx.characterId !== undefined)
+        ? ctx.characters[ctx.characterId] : (ctx.char || null);
+      const wiName = charObj?.data?.extensions?.world || charObj?.extensions?.world || '';
+      if (wiName) {
+        const wiData = await ctx.loadWorldInfo(wiName);
+        const entries = wiData?.entries || {};
+        Object.values(entries).forEach(e => {
+          const id = mpEntryStableId(e, wiName);
+          if (!seen.has(id)) {
+            seen.set(id, {
+              world: wiName,
+              uid: e.uid ?? e.id ?? '',
+              comment: e.comment || '',
+              key: e.key || e.keys || [],
+              content: e.content || '',
+              _stableId: id,
+            });
+          }
+        });
+      }
+    }
+  } catch (e) {
+    console.warn('[mp:imageGen] loadWorldInfo failed:', e?.message);
+  }
+
+  // 2. 全局 window.world_info（已激活的全局世界书）
+  try {
+    const wi = window.world_info || {};
+    Object.entries(wi).forEach(([wName, book]) => {
+      const entries = book?.entries || book?.content || {};
+      Object.values(entries).forEach(e => {
+        const id = mpEntryStableId(e, wName);
+        if (!seen.has(id)) {
+          seen.set(id, {
+            world: wName,
+            uid: e.uid ?? e.id ?? '',
+            comment: e.comment || '',
+            key: e.key || e.keys || [],
+            content: e.content || '',
+            _stableId: id,
+          });
+        }
+      });
+    });
+  } catch (e) {
+    console.warn('[mp:imageGen] world_info scan failed:', e?.message);
+  }
+
+  // 3. ST 全局 getSortedEntries（如果存在）
+  try {
+    if (typeof window.getSortedEntries === 'function') {
+      const arr = await window.getSortedEntries();
+      (arr || []).forEach(e => {
+        const id = mpEntryStableId(e, e?.world);
+        if (!seen.has(id)) {
+          seen.set(id, {
+            world: e.world || 'unknown',
+            uid: e.uid ?? e.id ?? '',
+            comment: e.comment || '',
+            key: e.key || e.keys || [],
+            content: e.content || '',
+            _stableId: id,
+          });
+        }
+      });
+    }
+  } catch (e) {
+    console.warn('[mp:imageGen] getSortedEntries failed:', e?.message);
+  }
+
+  return Array.from(seen.values());
+}
+
+// ─── 模态控制器 ───
+const MP_IG_MODAL = {
+  cfg: null,                  // 当前编辑中的配置（克隆体，保存时写回）
+  allEntries: [],             // 缓存的世界书条目
+  expandedWorlds: new Set(),  // 已展开的分组
+  searchQuery: '',
+  availableModels: [],        // 出图模型列表
+};
+
+function mpEscHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+function mpEscAttr(s) {
+  return String(s ?? '').replace(/"/g, '&quot;');
+}
+
+function mpIgToast(msg, ok = true) {
+  const $modal = $('#rp-imagegen-modal');
+  if (!$modal.length) return;
+  const $t = $('<div class="rp-ig-toast"></div>')
+    .text(msg)
+    .css('background', ok ? '#10b981' : '#e94560');
+  $modal.find('.rp-imagegen-panel').append($t);
+  setTimeout(() => $t.remove(), 1800);
+}
+
+async function mpIgOpenModal() {
+  const cfg = mpGetImageGenCfg();
+  MP_IG_MODAL.cfg = JSON.parse(JSON.stringify(cfg)); // 克隆，cancel 时丢弃
+  MP_IG_MODAL.allEntries = [];
+  MP_IG_MODAL.expandedWorlds = new Set();
+  MP_IG_MODAL.searchQuery = '';
+  MP_IG_MODAL.availableModels = [];
+
+  const $modal = $('#rp-imagegen-modal');
+  // 默认 active tab = api
+  $modal.find('.rp-ig-tab').removeClass('active');
+  $modal.find('.rp-ig-tab[data-tab="api"]').addClass('active');
+  $modal.find('.rp-ig-pane').hide();
+  $modal.find('.rp-ig-pane[data-tab="api"]').show();
+
+  mpIgRenderApiPane();
+  $modal.show();
+}
+
+function mpIgCloseModal() {
+  $('#rp-imagegen-modal').hide();
+  MP_IG_MODAL.cfg = null;
+}
+
+function mpIgSwitchTab(tab) {
+  const $modal = $('#rp-imagegen-modal');
+  $modal.find('.rp-ig-tab').removeClass('active');
+  $modal.find(`.rp-ig-tab[data-tab="${tab}"]`).addClass('active');
+  $modal.find('.rp-ig-pane').hide();
+  $modal.find(`.rp-ig-pane[data-tab="${tab}"]`).show();
+  if (tab === 'api') mpIgRenderApiPane();
+  else if (tab === 'worldbook') mpIgRenderWorldbookPane();
+  else if (tab === 'trigger') mpIgRenderTriggerPane();
+}
+
+function mpIgRenderApiPane() {
+  const c = MP_IG_MODAL.cfg;
+  const html = `
+    <div class="rp-ig-field">
+      <label>LLM API 地址</label>
+      <input type="text" id="ig-api-url" value="${mpEscAttr(c.apiUrl)}" placeholder="https://api.deepseek.com/v1/chat/completions"/>
+      <div class="rp-ig-hint">兼容 OpenAI 格式的 chat/completions 端点</div>
+    </div>
+    <div class="rp-ig-field">
+      <label>API Key</label>
+      <input type="password" id="ig-api-key" value="${mpEscAttr(c.apiKey)}" placeholder="sk-..."/>
+    </div>
+    <div class="rp-ig-field">
+      <label>LLM 模型名</label>
+      <input type="text" id="ig-llm-model" value="${mpEscAttr(c.llmModel)}" placeholder="deepseek-chat"/>
+    </div>
+    <div class="rp-ig-field">
+      <label>出图代理地址</label>
+      <input type="text" id="ig-proxy-url" value="${mpEscAttr(c.proxyUrl)}" placeholder="http://10.212.154.97:7860"/>
+      <div class="rp-ig-hint">本地 ComfyUI 代理服务，最终图片 URL 形如 <code>${mpEscHtml(c.proxyUrl)}/prompt/&lt;prompt&gt;?model=...</code></div>
+    </div>
+    <button id="ig-test-conn" class="rp-ig-mini-btn" style="background:#2563eb;color:#fff">测试 LLM 连接</button>
+    <span id="ig-test-result" style="margin-left:8px;font-size:12px"></span>
+  `;
+  $('#rp-imagegen-modal .rp-ig-pane[data-tab="api"]').html(html);
+}
+
+async function mpIgRenderWorldbookPane() {
+  const $pane = $('#rp-imagegen-modal .rp-ig-pane[data-tab="worldbook"]');
+  if (MP_IG_MODAL.allEntries.length === 0) {
+    $pane.html('<div style="text-align:center;color:#888;padding:18px">加载世界书条目中...</div>');
+    try {
+      MP_IG_MODAL.allEntries = await mpGatherAllWorldEntries();
+    } catch (e) {
+      $pane.html(`<div style="color:#e94560;padding:14px">加载失败: ${mpEscHtml(e?.message || e)}</div>`);
+      return;
+    }
+  }
+  mpIgPaintWorldbook();
+}
+
+function mpIgPaintWorldbook() {
+  const $pane = $('#rp-imagegen-modal .rp-ig-pane[data-tab="worldbook"]');
+  const all = MP_IG_MODAL.allEntries;
+  const cfg = MP_IG_MODAL.cfg;
+  const selectedSet = new Set(cfg.selectedEntries);
+
+  // 找出"已选但当前不在 allEntries"的孤立 ID
+  const allIds = new Set(all.map(e => e._stableId));
+  const orphans = cfg.selectedEntries.filter(id => !allIds.has(id));
+
+  if (all.length === 0 && orphans.length === 0) {
+    $pane.html('<div style="color:#888;padding:14px">当前未启用任何世界书。请先在酒馆里加载世界书后回到此处刷新。</div>');
+    // 仍然提供工具栏
+    $pane.append(`<div class="rp-ig-row-toolbar"><button class="rp-ig-mini-btn" data-action="reload">🔄 刷新</button></div>`);
+    return;
+  }
+
+  const q = MP_IG_MODAL.searchQuery.toLowerCase();
+  const filtered = q
+    ? all.filter(e => {
+        const blob = `${e.comment || ''} ${(Array.isArray(e.key) ? e.key.join(',') : e.key) || ''} ${e.content || ''}`.toLowerCase();
+        return blob.includes(q);
+      })
+    : all;
+
+  const grouped = {};
+  filtered.forEach(e => {
+    const w = e.world || '(未知)';
+    if (!grouped[w]) grouped[w] = [];
+    grouped[w].push(e);
+  });
+
+  let html = `
+    <input type="text" class="rp-ig-search" id="ig-wb-search" placeholder="搜索条目..." value="${mpEscAttr(MP_IG_MODAL.searchQuery)}"/>
+    <div class="rp-ig-row-toolbar">
+      <button class="rp-ig-mini-btn" data-action="select-all">全选</button>
+      <button class="rp-ig-mini-btn" data-action="select-none">全不选</button>
+      <button class="rp-ig-mini-btn" data-action="invert">反选</button>
+      <button class="rp-ig-mini-btn" data-action="reload">🔄 刷新</button>
+      <span style="margin-left:auto;font-size:11px;color:#888;align-self:center">已选 ${cfg.selectedEntries.length} 条</span>
+    </div>
+  `;
+
+  const worldNames = Object.keys(grouped).sort();
+  worldNames.forEach(wName => {
+    const items = grouped[wName];
+    const isOpen = MP_IG_MODAL.expandedWorlds.has(wName) || !!q;
+    const sel = items.filter(e => selectedSet.has(e._stableId)).length;
+    html += `
+      <div class="rp-ig-group">
+        <div class="rp-ig-group-head" data-world="${mpEscAttr(wName)}">
+          <span>${isOpen ? '▼' : '▶'} ${mpEscHtml(wName)}</span>
+          <span class="rp-ig-group-count">已选 ${sel} / ${items.length}</span>
+        </div>
+    `;
+    if (isOpen) {
+      items.forEach(e => {
+        const id = e._stableId;
+        const label = e.comment
+          || (Array.isArray(e.key) ? e.key.filter(Boolean).join(', ') : (e.key || ''))
+          || `(uid=${e.uid})`;
+        const preview = (e.content || '').replace(/\s+/g, ' ').slice(0, 60);
+        const checked = selectedSet.has(id) ? 'checked' : '';
+        html += `
+          <label class="rp-ig-entry">
+            <input type="checkbox" data-entry-id="${mpEscAttr(id)}" ${checked}/>
+            <div style="flex:1;min-width:0">
+              <div class="rp-ig-entry-title">${mpEscHtml(label)}</div>
+              <div class="rp-ig-entry-preview">${mpEscHtml(preview)}${e.content && e.content.length > 60 ? '…' : ''}</div>
+            </div>
+          </label>
+        `;
+      });
+    }
+    html += `</div>`;
+  });
+
+  if (orphans.length > 0) {
+    html += `
+      <div class="rp-ig-group" style="border-color:#e94560">
+        <div class="rp-ig-group-head" style="background:rgba(233,69,96,.06)">
+          <span>⚠ 已选但当前不可用</span>
+          <span class="rp-ig-group-count">${orphans.length} 条</span>
+        </div>
+        ${orphans.map(id => `
+          <label class="rp-ig-entry">
+            <input type="checkbox" data-entry-id="${mpEscAttr(id)}" checked/>
+            <div style="flex:1;min-width:0">
+              <div class="rp-ig-entry-title">${mpEscHtml(id)}</div>
+              <div class="rp-ig-entry-missing">不在当前世界书中。取消勾选可移除；保留则切回原角色卡时自动恢复。</div>
+            </div>
+          </label>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  $pane.html(html);
+}
+
+async function mpIgRenderTriggerPane() {
+  const c = MP_IG_MODAL.cfg;
+  const $pane = $('#rp-imagegen-modal .rp-ig-pane[data-tab="trigger"]');
+  $pane.html(`
+    <div class="rp-ig-field">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+        <input type="checkbox" id="ig-enabled" ${c.enabled ? 'checked' : ''}/>
+        <span>启用消息 App 内自动生图</span>
+      </label>
+    </div>
+    <div class="rp-ig-field">
+      <label>触发关键词（逗号分隔）</label>
+      <textarea id="ig-keywords" rows="2">${mpEscHtml((c.triggerKeywords || []).join(', '))}</textarea>
+      <div class="rp-ig-hint">在消息文本前 30 字内匹配任一关键词时触发</div>
+    </div>
+    <div class="rp-ig-field">
+      <label>聊天历史深度：<span id="ig-depth-display">${c.chatHistoryDepth}</span> 条</label>
+      <input type="range" id="ig-depth" min="1" max="20" value="${c.chatHistoryDepth}" style="width:100%"/>
+      <div class="rp-ig-hint">取主聊天最近 N 条消息作为上下文（NPC 上一轮在干嘛）</div>
+    </div>
+    <div class="rp-ig-field">
+      <label>出图模型 <button id="ig-refresh-models" class="rp-ig-mini-btn" style="margin-left:8px">🔄 刷新</button></label>
+      <div id="ig-model-list">
+        <div style="color:#888;padding:8px 0;font-size:12px">点"刷新"从代理拉取模型列表</div>
+      </div>
+      <div class="rp-ig-hint">当前选中：${mpEscHtml(c.selectedModel || '(未选)')}</div>
+    </div>
+    <div class="rp-ig-field">
+      <label>正向 prompt 前缀</label>
+      <textarea id="ig-positive-prefix" rows="2">${mpEscHtml(c.positivePrefix || '')}</textarea>
+      <div class="rp-ig-hint">会拼在 LLM 产出的 image_prompt 前面（masterpiece、best quality 之类）</div>
+    </div>
+    <div class="rp-ig-field">
+      <label>负向 prompt</label>
+      <textarea id="ig-negative-prompt" rows="2">${mpEscHtml(c.negativePrompt || '')}</textarea>
+    </div>
+    <div class="rp-ig-field">
+      <label>LLM 温度</label>
+      <input type="number" id="ig-temperature" min="0" max="2" step="0.1" value="${c.llmTemperature}" style="width:80px"/>
+    </div>
+  `);
+
+  // 渲染已缓存的模型列表
+  if (MP_IG_MODAL.availableModels.length > 0) {
+    mpIgPaintModelList();
+  }
+}
+
+function mpIgPaintModelList() {
+  const $list = $('#rp-imagegen-modal #ig-model-list');
+  const cur = MP_IG_MODAL.cfg.selectedModel;
+  if (MP_IG_MODAL.availableModels.length === 0) {
+    $list.html('<div style="color:#888;padding:8px 0;font-size:12px">无可用模型</div>');
+    return;
+  }
+  $list.html(MP_IG_MODAL.availableModels.map(m => `
+    <label class="rp-ig-model-row ${m === cur ? 'selected' : ''}">
+      <input type="radio" name="ig-model-radio" value="${mpEscAttr(m)}" ${m === cur ? 'checked' : ''}/>
+      <span style="word-break:break-all">${mpEscHtml(m)}</span>
+    </label>
+  `).join(''));
+}
+
+async function mpIgRefreshModels() {
+  const c = MP_IG_MODAL.cfg;
+  const $list = $('#rp-imagegen-modal #ig-model-list');
+  $list.html('<div style="color:#888;padding:8px 0;font-size:12px">加载中...</div>');
+  try {
+    const url = `${c.proxyUrl.replace(/\/$/, '')}/models`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const arr = Array.isArray(data) ? data : (Array.isArray(data?.models) ? data.models : []);
+    MP_IG_MODAL.availableModels = arr.filter(x => typeof x === 'string');
+  } catch (e) {
+    console.warn('[mp:imageGen] /models failed:', e?.message);
+    MP_IG_MODAL.availableModels = [
+      'noobaiXLNAIXL_vPred10Version.safetensors',
+      'ponyMadness_v30.safetensors',
+    ];
+    mpIgToast('代理列表读取失败，已使用兜底列表', false);
+  }
+  mpIgPaintModelList();
+}
+
+async function mpIgTestConnection() {
+  const c = MP_IG_MODAL.cfg;
+  // 用表单当前值（用户可能改了但没保存）
+  const apiUrl = $('#ig-api-url').val().trim() || c.apiUrl;
+  const apiKey = $('#ig-api-key').val().trim() || c.apiKey;
+  const llmModel = $('#ig-llm-model').val().trim() || c.llmModel;
+  const $r = $('#ig-test-result');
+  $r.css('color', '#888').text('测试中...');
+  try {
+    const res = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: llmModel,
+        messages: [{ role: 'user', content: 'reply with the single word OK' }],
+        max_tokens: 8,
+        temperature: 0,
+      }),
+    });
+    if (!res.ok) {
+      const txt = await res.text().catch(() => '');
+      throw new Error(`HTTP ${res.status} ${txt.slice(0, 80)}`);
+    }
+    const data = await res.json();
+    const reply = data?.choices?.[0]?.message?.content || '';
+    $r.css('color', '#10b981').text(`✓ 通过：${reply.slice(0, 30)}`);
+  } catch (e) {
+    $r.css('color', '#e94560').text(`✗ ${e?.message || e}`);
+  }
+}
+
+function mpIgCollectFormIntoCfg() {
+  const c = MP_IG_MODAL.cfg;
+  // API Tab
+  const $apiUrl = $('#ig-api-url'); if ($apiUrl.length) c.apiUrl = $apiUrl.val().trim() || MP_IG_DEFAULT_CFG.apiUrl;
+  const $apiKey = $('#ig-api-key'); if ($apiKey.length) c.apiKey = $apiKey.val();
+  const $llmModel = $('#ig-llm-model'); if ($llmModel.length) c.llmModel = $llmModel.val().trim() || MP_IG_DEFAULT_CFG.llmModel;
+  const $proxy = $('#ig-proxy-url'); if ($proxy.length) c.proxyUrl = $proxy.val().trim() || MP_IG_DEFAULT_CFG.proxyUrl;
+  // Trigger Tab
+  const $en = $('#ig-enabled'); if ($en.length) c.enabled = $en.is(':checked');
+  const $kw = $('#ig-keywords');
+  if ($kw.length) c.triggerKeywords = $kw.val().split(/[,，\n]/).map(s => s.trim()).filter(Boolean);
+  const $depth = $('#ig-depth'); if ($depth.length) c.chatHistoryDepth = parseInt($depth.val(), 10) || 8;
+  const $pp = $('#ig-positive-prefix'); if ($pp.length) c.positivePrefix = $pp.val();
+  const $np = $('#ig-negative-prompt'); if ($np.length) c.negativePrompt = $np.val();
+  const $temp = $('#ig-temperature');
+  if ($temp.length) {
+    const t = parseFloat($temp.val());
+    if (!isNaN(t)) c.llmTemperature = Math.max(0, Math.min(2, t));
+  }
+  const $modelRadio = $('input[name="ig-model-radio"]:checked');
+  if ($modelRadio.length) c.selectedModel = $modelRadio.val();
+}
+
+function mpIgSave() {
+  // 当前 tab 的表单先收集进 cfg（其他 tab 在切换时已保存到 MP_IG_MODAL.cfg）
+  mpIgCollectFormIntoCfg();
+  mpSaveImageGenCfg(MP_IG_MODAL.cfg);
+  mpIgToast('已保存', true);
+  setTimeout(() => mpIgCloseModal(), 600);
+}
+
+// ─── 图片生成主流程 ───
+const MP_IG_SYSTEM_PROMPT = `You are roleplaying as the NPC named "{NPC_NAME}". The user just asked you for a photo through their phone.
+
+Based on:
+1. The worldbook entries (NPC's appearance, location, clothing, personality) — provided below
+2. The recent chat history — provided below (this shows what the NPC was just doing)
+3. The user's request — for the angle / framing / style
+
+Produce:
+1. ONE OR TWO short in-character text replies that the NPC sends BEFORE the photo (in the same language the user wrote in).
+2. ONE English Stable-Diffusion booru-style image prompt that MUST reflect:
+   - the NPC's appearance from the worldbook (hair color, eye color, body, clothes)
+   - current scene / location from the chat context
+   - what the NPC was just doing (e.g. user told NPC to leave for work → workplace + work clothes, not bedroom pajamas)
+   - the requested angle (selfie → "selfie, looking at viewer, holding phone, mirror selfie"; full body → "full body shot, standing pose")
+
+Respond ONLY in this exact JSON format, no markdown fences, no extra commentary:
+{"texts": ["msg1", "msg2"], "image_prompt": "english tags here, comma separated"}`;
+
+function mpMatchesImageTrigger(text, keywords) {
+  if (!Array.isArray(keywords) || keywords.length === 0) return false;
+  if (!text) return false;
+  const head = String(text).slice(0, 30).toLowerCase();
+  return keywords.some(k => k && head.includes(String(k).toLowerCase()));
+}
+
+function mpPhoneToast(msg, ms = 2400) {
+  const $phone = $('#rp-phone');
+  if (!$phone.length) {
+    console.log('[mp:imageGen]', msg);
+    return;
+  }
+  const $t = $('<div></div>')
+    .text(msg)
+    .css({
+      position: 'absolute',
+      bottom: '70px',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      background: 'rgba(20,20,40,0.92)',
+      color: '#fff',
+      padding: '8px 14px',
+      'border-radius': '8px',
+      'font-size': '12px',
+      'max-width': '85%',
+      'z-index': 9500,
+      'box-shadow': '0 2px 12px rgba(0,0,0,.4)',
+      'pointer-events': 'none',
+    });
+  $phone.append($t);
+  setTimeout(() => $t.remove(), ms);
+}
+
+function mpIgGenMsgId(prefix) {
+  return `${prefix || 'mpig'}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+}
+
+function mpBuildWorldbookContext(cfg, entries) {
+  if (!Array.isArray(cfg.selectedEntries) || cfg.selectedEntries.length === 0) {
+    return '(用户未选择任何世界书条目)';
+  }
+  const selectedSet = new Set(cfg.selectedEntries);
+  const matched = (entries || []).filter(e => selectedSet.has(e._stableId));
+  if (matched.length === 0) return '(选定的条目在当前世界书中均未找到)';
+  return matched.map(e => {
+    const label = e.comment
+      || (Array.isArray(e.key) ? e.key.filter(Boolean).join(', ') : (e.key || ''))
+      || `(uid=${e.uid})`;
+    return `[Entry: ${label}]\n${(e.content || '').trim()}`;
+  }).join('\n\n');
+}
+
+function mpBuildChatHistoryContext(depth) {
+  try {
+    const ctx = (typeof getContext === 'function') ? getContext() : null;
+    if (!ctx || !Array.isArray(ctx.chat) || ctx.chat.length === 0) return '(无聊天历史)';
+    const last = ctx.chat.slice(-Math.max(1, depth || 8));
+    return last.map(m => {
+      const speaker = m.is_user ? (ctx.name1 || 'User') : (m.name || 'NPC');
+      // 移除 <PHONE>/HTML 噪声，截断
+      const raw = String(m.mes || '')
+        .replace(/<PHONE>[\s\S]*?<\/PHONE>/gi, '')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      return `${speaker}: ${raw.slice(0, 600)}`;
+    }).join('\n');
+  } catch (e) {
+    console.warn('[mp:imageGen] chat history read failed:', e?.message);
+    return '(聊天历史读取失败)';
+  }
+}
+
+async function mpCallImageGenLLM(systemPrompt, userPrompt, cfg) {
+  if (!cfg.apiUrl) throw new Error('未配置 API 地址');
+  if (!cfg.apiKey) throw new Error('未配置 API Key');
+  const body = {
+    model: cfg.llmModel || 'deepseek-chat',
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt },
+    ],
+    temperature: typeof cfg.llmTemperature === 'number' ? cfg.llmTemperature : 0.7,
+    max_tokens: cfg.llmMaxTokens || 600,
+  };
+  // 仅 DeepSeek/OpenAI 支持 response_format json_object，加上更稳；端点不支持也只是被忽略或报 400
+  body.response_format = { type: 'json_object' };
+  const res = await fetch(cfg.apiUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${cfg.apiKey}`,
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const txt = await res.text().catch(() => '');
+    // 若是 response_format 不支持的错误，去掉重试一次
+    if (res.status === 400 && /response_format/i.test(txt)) {
+      delete body.response_format;
+      const retry = await fetch(cfg.apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${cfg.apiKey}` },
+        body: JSON.stringify(body),
+      });
+      if (!retry.ok) {
+        const t2 = await retry.text().catch(() => '');
+        throw new Error(`HTTP ${retry.status}: ${t2.slice(0, 100)}`);
+      }
+      const dataR = await retry.json();
+      return mpParseLLMJson(dataR?.choices?.[0]?.message?.content || '');
+    }
+    throw new Error(`HTTP ${res.status}: ${txt.slice(0, 100)}`);
+  }
+  const data = await res.json();
+  const raw = data?.choices?.[0]?.message?.content || '';
+  return mpParseLLMJson(raw);
+}
+
+function mpParseLLMJson(raw) {
+  if (!raw) throw new Error('LLM 返回为空');
+  let cleaned = String(raw).trim();
+  // 去掉 ```json ... ``` 围栏
+  const fenceMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+  if (fenceMatch) cleaned = fenceMatch[1];
+  // 取第一个 { 到最后一个 }
+  const firstBrace = cleaned.indexOf('{');
+  const lastBrace = cleaned.lastIndexOf('}');
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    cleaned = cleaned.slice(firstBrace, lastBrace + 1);
+  }
+  let obj;
+  try {
+    obj = JSON.parse(cleaned);
+  } catch (e) {
+    throw new Error('LLM JSON 解析失败: ' + e.message);
+  }
+  if (typeof obj.image_prompt !== 'string' || !obj.image_prompt.trim()) {
+    throw new Error('LLM 未返回有效的 image_prompt');
+  }
+  if (!Array.isArray(obj.texts)) obj.texts = [];
+  obj.texts = obj.texts.filter(t => typeof t === 'string' && t.trim()).slice(0, 3);
+  return obj;
+}
+
+function mpBuildImageProxyUrl(imagePrompt, cfg) {
+  const proxy = String(cfg.proxyUrl || 'http://10.212.154.97:7860').replace(/\/$/, '');
+  const fullPrompt = (cfg.positivePrefix || '') + imagePrompt;
+  const params = new URLSearchParams();
+  if (cfg.selectedModel) params.set('model', cfg.selectedModel);
+  if (cfg.negativePrompt) params.set('negative', cfg.negativePrompt);
+  const qs = params.toString();
+  return `${proxy}/prompt/${encodeURIComponent(fullPrompt)}${qs ? '?' + qs : ''}`;
+}
+
+async function mpHandleImageRequest(rawText, threadId) {
+  const cfg = mpGetImageGenCfg();
+  const th = STATE.threads[threadId];
+  if (!th) throw new Error('当前聊天线程不存在');
+  const npcName = th.name || 'NPC';
+  const ts = (typeof resolvePhoneTime === 'function') ? resolvePhoneTime() : '';
+
+  // 1. 立刻把用户消息推到 UI
+  th.messages.push({ from: 'user', text: rawText, time: ts });
+
+  // 2. 占位"拍照中"气泡（普通文字气泡，避免触发智绘姬链路）
+  const placeholderId = mpIgGenMsgId('placeholder');
+  th.messages.push({
+    id: placeholderId,
+    from: th.name,
+    text: '📷 拍照中…',
+    time: ts,
+    _mpIgPlaceholder: true,
+  });
+  renderBubbles(threadId);
+  updatePreviews();
+  saveState();
+
+  // 3. 收集上下文 + 调 LLM
+  let parsed;
+  try {
+    const allEntries = await mpGatherAllWorldEntries();
+    const wbText = mpBuildWorldbookContext(cfg, allEntries);
+    const chatText = mpBuildChatHistoryContext(cfg.chatHistoryDepth);
+    const sys = MP_IG_SYSTEM_PROMPT.replace(/\{NPC_NAME\}/g, npcName);
+    const user =
+`## Worldbook entries
+${wbText}
+
+## Recent chat history
+${chatText}
+
+## User just sent NPC "${npcName}" via phone:
+${rawText}
+
+Respond now in the JSON format described in the system message.`;
+    parsed = await mpCallImageGenLLM(sys, user, cfg);
+  } catch (err) {
+    // 移除占位
+    const idx = th.messages.findIndex(m => m && m.id === placeholderId);
+    if (idx >= 0) th.messages.splice(idx, 1);
+    renderBubbles(threadId);
+    updatePreviews();
+    saveState();
+    throw err;
+  }
+
+  // 4. 替换占位为：N 条 NPC 文字 + 1 条图片
+  const idx = th.messages.findIndex(m => m && m.id === placeholderId);
+  if (idx >= 0) th.messages.splice(idx, 1);
+
+  const tsAfter = (typeof resolvePhoneTime === 'function') ? resolvePhoneTime() : ts;
+  (parsed.texts || []).forEach(t => {
+    th.messages.push({ from: th.name, text: t, time: tsAfter });
+  });
+  const imgUrl = mpBuildImageProxyUrl(parsed.image_prompt, cfg);
+  th.messages.push({
+    id: mpIgGenMsgId('mpigimg'),
+    from: th.name,
+    type: 'image',
+    src: imgUrl,
+    prompt: parsed.image_prompt,  // 保留以便日后调试，但因为是 type:image 不会触发智绘姬
+    time: tsAfter,
+    _mpIgGenerated: true,
+  });
+
+  renderBubbles(threadId);
+  updatePreviews();
+  saveState();
+  console.log('[mp:imageGen] ✓ 注入完成 npc=', npcName, 'prompt=', parsed.image_prompt.slice(0, 80));
+}
+
 function makeLightweightPayload(payload) {
   const p = payload || {};
   const threads = {};
@@ -5935,7 +6728,42 @@ const HTML = `
               </div>
             </div>
 
+            <div class="rp-set-section-title">AI 图片生成</div>
+            <div class="rp-set-section">
+              <div class="rp-set-row">
+                <span class="rp-set-key">📷 自拍 / 拍照设置</span>
+                <button id="rp-imagegen-open" class="rp-set-upload-btn">⚙️ 打开</button>
+              </div>
+              <div class="rp-set-row" style="flex-direction:column;align-items:stretch;gap:4px">
+                <div style="font-size:12px;color:#8a8a9a;line-height:1.5">在消息里向 NPC 说"自拍"等关键词时，自动调用 LLM 产 prompt + 通过本地 ComfyUI 代理出图。</div>
+              </div>
+            </div>
 
+          </div>
+        </div>
+
+        <!-- AI 图片生成设置模态 -->
+        <div id="rp-imagegen-modal" class="rp-imagegen-modal" style="display:none">
+          <div class="rp-imagegen-backdrop"></div>
+          <div class="rp-imagegen-panel">
+            <div class="rp-imagegen-header">
+              <span class="rp-imagegen-title">AI 图片生成设置</span>
+              <button class="rp-imagegen-close" type="button">✕</button>
+            </div>
+            <div class="rp-imagegen-tabs">
+              <button class="rp-ig-tab active" data-tab="api">接口</button>
+              <button class="rp-ig-tab" data-tab="worldbook">世界书</button>
+              <button class="rp-ig-tab" data-tab="trigger">触发</button>
+            </div>
+            <div class="rp-imagegen-body">
+              <div class="rp-ig-pane" data-tab="api"></div>
+              <div class="rp-ig-pane" data-tab="worldbook" style="display:none"></div>
+              <div class="rp-ig-pane" data-tab="trigger" style="display:none"></div>
+            </div>
+            <div class="rp-imagegen-footer">
+              <button class="rp-ig-cancel" type="button">取消</button>
+              <button class="rp-ig-save" type="button">保存</button>
+            </div>
           </div>
         </div>
 
@@ -6975,6 +7803,20 @@ function onChatChanged() {
       }, 300);
     } catch(e) { console.warn('[Phone] onChatChanged delayed error', e); }
   }, 600);
+
+  // ── AI 图片生成：检查已选条目是否仍在当前世界书 ──
+  setTimeout(async function() {
+    try {
+      if (STATE.chatId !== _expectedChatId) return;
+      const cfg = mpGetImageGenCfg();
+      if (!cfg.enabled || !Array.isArray(cfg.selectedEntries) || cfg.selectedEntries.length === 0) return;
+      const all = await mpGatherAllWorldEntries();
+      const allIds = new Set(all.map(e => e._stableId));
+      const lost = cfg.selectedEntries.filter(id => !allIds.has(id)).length;
+      const have = cfg.selectedEntries.length - lost;
+      console.log(`[mp:imageGen] CHAT_CHANGED → 已选条目 ${have}/${cfg.selectedEntries.length} 可用` + (lost > 0 ? `，${lost} 条不在当前世界书` : ''));
+    } catch (e) { /* ignore */ }
+  }, 1000);
 }
 
 // ================================================================
@@ -8119,6 +8961,95 @@ function bindUI() {
     }
   });
 
+  // ── AI 图片生成模态事件 ──
+  $(document).on('click', '#rp-imagegen-open', function(e) {
+    e.stopPropagation();
+    mpIgOpenModal();
+  });
+  $(document).on('click', '#rp-imagegen-modal .rp-imagegen-close, #rp-imagegen-modal .rp-imagegen-backdrop, #rp-imagegen-modal .rp-ig-cancel', function(e) {
+    e.stopPropagation();
+    mpIgCloseModal();
+  });
+  $(document).on('click', '#rp-imagegen-modal .rp-ig-tab', function(e) {
+    e.stopPropagation();
+    // 切 Tab 前先把当前 Tab 表单内容收进 cfg
+    mpIgCollectFormIntoCfg();
+    mpIgSwitchTab($(this).data('tab'));
+  });
+  $(document).on('click', '#rp-imagegen-modal .rp-ig-save', function(e) {
+    e.stopPropagation();
+    mpIgSave();
+  });
+  $(document).on('click', '#rp-imagegen-modal #ig-test-conn', function(e) {
+    e.stopPropagation();
+    mpIgTestConnection();
+  });
+  $(document).on('click', '#rp-imagegen-modal #ig-refresh-models', function(e) {
+    e.stopPropagation();
+    e.preventDefault();
+    mpIgRefreshModels();
+  });
+  // 触发 Tab：滑块实时显示
+  $(document).on('input', '#rp-imagegen-modal #ig-depth', function() {
+    $('#rp-imagegen-modal #ig-depth-display').text($(this).val());
+  });
+  // 触发 Tab：模型 radio
+  $(document).on('change', '#rp-imagegen-modal input[name="ig-model-radio"]', function() {
+    if (MP_IG_MODAL.cfg) MP_IG_MODAL.cfg.selectedModel = $(this).val();
+    mpIgPaintModelList();
+  });
+  // 世界书 Tab：搜索
+  $(document).on('input', '#rp-imagegen-modal #ig-wb-search', function() {
+    MP_IG_MODAL.searchQuery = $(this).val().trim();
+    mpIgPaintWorldbook();
+    // 重新聚焦保留光标
+    setTimeout(() => {
+      const $s = $('#rp-imagegen-modal #ig-wb-search');
+      if ($s.length) {
+        const v = $s.val();
+        $s.focus().val('').val(v);
+      }
+    }, 0);
+  });
+  // 世界书 Tab：工具栏 + 分组折叠 + 条目勾选
+  $(document).on('click', '#rp-imagegen-modal .rp-ig-pane[data-tab="worldbook"] .rp-ig-mini-btn', function(e) {
+    e.stopPropagation();
+    if (!MP_IG_MODAL.cfg) return;
+    const action = $(this).data('action');
+    if (action === 'select-all') {
+      MP_IG_MODAL.cfg.selectedEntries = MP_IG_MODAL.allEntries.map(e => e._stableId);
+    } else if (action === 'select-none') {
+      MP_IG_MODAL.cfg.selectedEntries = [];
+    } else if (action === 'invert') {
+      const cur = new Set(MP_IG_MODAL.cfg.selectedEntries);
+      const next = [];
+      MP_IG_MODAL.allEntries.forEach(e => { if (!cur.has(e._stableId)) next.push(e._stableId); });
+      MP_IG_MODAL.cfg.selectedEntries = next;
+    } else if (action === 'reload') {
+      MP_IG_MODAL.allEntries = [];
+      mpIgRenderWorldbookPane();
+      return;
+    }
+    mpIgPaintWorldbook();
+  });
+  $(document).on('click', '#rp-imagegen-modal .rp-ig-group-head', function(e) {
+    e.stopPropagation();
+    const w = $(this).data('world');
+    if (!w) return;
+    if (MP_IG_MODAL.expandedWorlds.has(w)) MP_IG_MODAL.expandedWorlds.delete(w);
+    else MP_IG_MODAL.expandedWorlds.add(w);
+    mpIgPaintWorldbook();
+  });
+  $(document).on('change', '#rp-imagegen-modal input[type="checkbox"][data-entry-id]', function(e) {
+    e.stopPropagation();
+    if (!MP_IG_MODAL.cfg) return;
+    const id = $(this).data('entry-id');
+    const set = new Set(MP_IG_MODAL.cfg.selectedEntries);
+    if ($(this).is(':checked')) set.add(id); else set.delete(id);
+    MP_IG_MODAL.cfg.selectedEntries = Array.from(set);
+    mpIgPaintWorldbook();
+  });
+
 }
 
 // ================================================================
@@ -8994,6 +9925,28 @@ function sendSMS() {
   }
 
   if (!STATE.currentThread || STATE.pendingMessages.length === 0) return;
+
+  // ★ AI 图片生成拦截：单条消息 + 命中关键词 → 走独立流水
+  try {
+    const _igCfg = mpGetImageGenCfg();
+    const _curTh = STATE.threads[STATE.currentThread];
+    const _isGroupTh = _curTh && (_curTh.type === 'group' || String(_curTh.id || '').startsWith('grp_'));
+    if (_igCfg.enabled
+        && STATE.pendingMessages.length === 1
+        && !_isGroupTh
+        && _curTh
+        && mpMatchesImageTrigger(STATE.pendingMessages[0], _igCfg.triggerKeywords)) {
+      const _text = STATE.pendingMessages.shift();
+      renderPendingQueue();
+      mpHandleImageRequest(_text, STATE.currentThread).catch(err => {
+        console.error('[mp:imageGen] 处理失败:', err);
+        mpPhoneToast('图片生成失败：' + (err?.message || err));
+      });
+      return;
+    }
+  } catch (e) {
+    console.warn('[mp:imageGen] 拦截阶段异常，回落到原 sendSMS:', e);
+  }
 
   const th  = STATE.threads[STATE.currentThread];
   const ts  = resolvePhoneTime();
