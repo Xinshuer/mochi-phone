@@ -5025,6 +5025,7 @@ function mpIgPaintWorldbook() {
       <button class="rp-ig-mini-btn" data-action="select-none">全不选</button>
       <button class="rp-ig-mini-btn" data-action="invert">反选</button>
       <button class="rp-ig-mini-btn" data-action="reload">🔄 刷新</button>
+      <button class="rp-ig-mini-btn" data-action="add-contacts" style="background:#dbeafe;color:#1e40af">📞 从已选添加联系人</button>
       <span style="margin-left:auto;font-size:11px;color:#888;align-self:center">已选 ${cfg.selectedEntries.length} 条</span>
     </div>
   `;
@@ -5173,6 +5174,198 @@ function mpIgSave() {
   mpSaveImageGenCfg(MP_IG_MODAL.cfg);
   mpIgToast('已保存', true);
   setTimeout(() => mpIgCloseModal(), 600);
+}
+
+// ─── 联系人提取（从已选世界书条目）───
+// 使用 mochi-phone 现有的三种命名格式（[Name]、## Name、name: Xxx），
+// 与 getMomentsCtx 里的人名解析保持一致，避免行为漂移
+function mpIgExtractCandidateNames(entries) {
+  const map = new Map(); // canonicalName -> { name, sources: Set<string> }
+  const ctx = (typeof getContext === 'function') ? getContext() : {};
+  const charName = ctx?.name2 || '';
+  const userName = ctx?.name1 || '';
+  const skipNorm = (typeof normalizePhonePersonName === 'function')
+    ? normalizePhonePersonName : (s => String(s || '').trim().toLowerCase());
+  const skipSet = new Set([charName, userName].map(skipNorm).filter(Boolean));
+
+  function pushName(rawName, sourceLabel) {
+    const cleaned = String(rawName || '')
+      .replace(/[<>"'`*_]/g, '')
+      .split(/[((【\[,，、|/\\]/)[0]
+      .trim()
+      .slice(0, 30);
+    if (!cleaned || cleaned.length < 2) return;
+    if (/^(name|角色名|姓名|character)$/i.test(cleaned)) return;
+    const norm = skipNorm(cleaned);
+    if (skipSet.has(norm)) return; // 跳过 user / 主角
+    if (typeof isPhoneBlocked === 'function' && isPhoneBlocked(cleaned)) return;
+    if (!map.has(norm)) map.set(norm, { name: cleaned, sources: new Set() });
+    map.get(norm).sources.add(sourceLabel);
+  }
+
+  (entries || []).forEach(e => {
+    const sourceLabel = e.comment || e._stableId || '(无标题)';
+    const content = String(e.content || '');
+
+    // 1. comment 字段本身像名字（短、无空格逗号）
+    if (e.comment && e.comment.length <= 20
+        && !/[,，\s]/.test(e.comment)
+        && !/(外貌|设定|appearance|persona|profile|info|background|场景|scene)/i.test(e.comment)) {
+      pushName(e.comment, sourceLabel);
+    }
+
+    // 2. [Name] 或 [Name - 标题]
+    const bracketMatches = content.match(/^\s*\[([^\]|\/\\]{2,30})(?:[-|\/\\][^\]]*)?\]/gm) || [];
+    bracketMatches.forEach(b => {
+      const m = b.match(/^\s*\[([^\]|\/\\]+?)(?:[-|\/\\][^\]]*)?\]/);
+      if (m) pushName(m[1], sourceLabel);
+    });
+
+    // 3. ## Name / # Name
+    const mdMatches = content.match(/^\s*#{1,3}\s*([^\n#\-]+)/gm) || [];
+    mdMatches.forEach(b => {
+      const m = b.match(/^\s*#{1,3}\s*([^\n#\-]+)/);
+      if (m) pushName(m[1], sourceLabel);
+    });
+
+    // 4. name: Xxx / 角色名: Xxx
+    const nameRe = /(?:^|\n)\s*(?:name|Name|NAME|角色名|姓名)[\s::]+([^\n,，。.]+)/g;
+    let nm;
+    while ((nm = nameRe.exec(content)) !== null) {
+      pushName(nm[1], sourceLabel);
+    }
+  });
+
+  return Array.from(map.values()).map(v => ({
+    name: v.name,
+    sources: Array.from(v.sources),
+    exists: Object.values(STATE.threads || {}).some(t =>
+      skipNorm(t.name || '') === skipNorm(v.name)
+    ),
+  }));
+}
+
+function mpIgRenderContactPicker() {
+  const $pane = $('#rp-imagegen-modal .rp-ig-pane[data-tab="worldbook"]');
+  const cfg = MP_IG_MODAL.cfg;
+  const all = MP_IG_MODAL.allEntries || [];
+  const selectedSet = new Set(cfg.selectedEntries);
+  const matched = all.filter(e => selectedSet.has(e._stableId));
+
+  if (matched.length === 0) {
+    mpIgToast('请先在下方勾选条目，再来添加联系人', false);
+    return;
+  }
+
+  const candidates = mpIgExtractCandidateNames(matched);
+  // 默认勾选所有"未存在"的候选
+  MP_IG_MODAL._contactPicker = {
+    candidates: candidates.map(c => ({ ...c, checked: !c.exists })),
+    manualText: '',
+  };
+  mpIgPaintContactPicker();
+}
+
+function mpIgPaintContactPicker() {
+  const $pane = $('#rp-imagegen-modal .rp-ig-pane[data-tab="worldbook"]');
+  const picker = MP_IG_MODAL._contactPicker;
+  if (!picker) return;
+
+  const html = `
+    <div id="ig-contact-picker" style="border:2px solid #2563eb;border-radius:8px;padding:12px;margin-bottom:12px;background:rgba(37,99,235,.04)">
+      <div style="font-weight:600;font-size:13px;margin-bottom:6px;color:#2563eb">📞 从已选条目添加联系人</div>
+      <div class="rp-ig-hint" style="margin-bottom:10px">从条目的标题 / [Name] / ## Name / name: Xxx 自动提取。<b>已存在</b>的会标灰色不再创建。</div>
+
+      ${picker.candidates.length === 0 ? `
+        <div style="color:#888;font-size:12px;padding:8px 0">未在已选条目中识别到名字。可在下面手动输入。</div>
+      ` : picker.candidates.map((c, i) => `
+        <label style="display:flex;align-items:flex-start;gap:8px;padding:5px 0;cursor:${c.exists ? 'default' : 'pointer'}">
+          <input type="checkbox" data-cand-idx="${i}" ${c.checked ? 'checked' : ''} ${c.exists ? 'disabled' : ''} style="margin-top:3px"/>
+          <div style="flex:1;min-width:0">
+            <span style="font-weight:600;font-size:13px;${c.exists ? 'color:#888;text-decoration:line-through' : ''}">${mpEscHtml(c.name)}</span>
+            ${c.exists ? '<span style="color:#888;font-size:11px;margin-left:6px">(已是联系人)</span>' : ''}
+            <div style="color:#888;font-size:11px;margin-top:2px">来源：${mpEscHtml(c.sources.slice(0, 2).join(' / '))}${c.sources.length > 2 ? ` (+${c.sources.length - 2})` : ''}</div>
+          </div>
+        </label>
+      `).join('')}
+
+      <div style="margin-top:12px">
+        <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px">手动追加（逗号或换行分隔）</label>
+        <textarea id="ig-contact-manual" rows="2" placeholder="例如：Alice, Bob, 张三" style="width:100%;box-sizing:border-box;padding:6px 10px;font-size:12px;border:1px solid rgba(0,0,0,.12);border-radius:6px;background:#fafaff;color:#222;outline:none">${mpEscHtml(picker.manualText || '')}</textarea>
+      </div>
+
+      <div style="margin-top:10px;display:flex;gap:8px;justify-content:flex-end">
+        <button class="rp-ig-mini-btn" data-cp-action="cancel">取消</button>
+        <button class="rp-ig-mini-btn" data-cp-action="confirm" style="background:#10b981;color:#fff">➕ 创建</button>
+      </div>
+    </div>
+  `;
+
+  // 替换面板顶部的 picker 容器（如果不存在则插入）
+  let $picker = $pane.find('#ig-contact-picker');
+  if ($picker.length) {
+    $picker.replaceWith(html);
+  } else {
+    $pane.prepend(html);
+  }
+}
+
+function mpIgClosePickerAndRepaint() {
+  MP_IG_MODAL._contactPicker = null;
+  mpIgPaintWorldbook();
+}
+
+function mpIgConfirmAddContacts() {
+  const picker = MP_IG_MODAL._contactPicker;
+  if (!picker) return;
+
+  // 收集勾选的自动候选 + 手动输入的名字
+  const names = [];
+  picker.candidates.forEach(c => {
+    if (c.checked && !c.exists) names.push(c.name);
+  });
+  const manualText = $('#ig-contact-manual').val() || '';
+  manualText.split(/[,，\n]/).map(s => s.trim()).filter(Boolean).forEach(n => {
+    if (!names.includes(n)) names.push(n);
+  });
+
+  if (names.length === 0) {
+    mpIgToast('没选中任何联系人', false);
+    return;
+  }
+
+  // 批量创建
+  let created = 0, skipped = 0, failed = 0;
+  const ctx = (typeof getContext === 'function') ? getContext() : {};
+  for (const name of names) {
+    try {
+      if (typeof isForbiddenPhoneContactName === 'function' && isForbiddenPhoneContactName(name, ctx)) {
+        skipped++; continue;
+      }
+      if (typeof isPhoneBlocked === 'function' && isPhoneBlocked(name)) {
+        skipped++; continue;
+      }
+      const exists = Object.values(STATE.threads).some(t =>
+        normalizePhonePersonName(t.name || '') === normalizePhonePersonName(name)
+      );
+      if (exists) { skipped++; continue; }
+      const t = (typeof findOrCreateThread === 'function') ? findOrCreateThread(name) : null;
+      if (t) created++; else failed++;
+    } catch (e) {
+      failed++;
+      console.warn('[mp:imageGen] add contact failed:', name, e);
+    }
+  }
+
+  try {
+    if (typeof renderThreadList === 'function') renderThreadList();
+    if (typeof saveState === 'function') saveState();
+    if (typeof updatePreviews === 'function') updatePreviews();
+  } catch (e) { /* ignore */ }
+
+  const msg = `已创建 ${created} 个联系人` + (skipped ? `，跳过 ${skipped}` : '') + (failed ? `，失败 ${failed}` : '');
+  mpIgToast(msg, created > 0);
+  mpIgClosePickerAndRepaint();
 }
 
 // ─── 上下文构造 + chat completion 注入 ───
@@ -8830,8 +9023,28 @@ function bindUI() {
       MP_IG_MODAL.allEntries = [];
       mpIgRenderWorldbookPane();
       return;
+    } else if (action === 'add-contacts') {
+      mpIgRenderContactPicker();
+      return;
     }
     mpIgPaintWorldbook();
+  });
+
+  // ── 联系人 picker：勾选 / 确认 / 取消 ──
+  $(document).on('change', '#rp-imagegen-modal #ig-contact-picker input[type="checkbox"][data-cand-idx]', function() {
+    const idx = parseInt($(this).data('cand-idx'), 10);
+    if (!MP_IG_MODAL._contactPicker) return;
+    const c = MP_IG_MODAL._contactPicker.candidates[idx];
+    if (c && !c.exists) c.checked = $(this).is(':checked');
+  });
+  $(document).on('input', '#rp-imagegen-modal #ig-contact-manual', function() {
+    if (MP_IG_MODAL._contactPicker) MP_IG_MODAL._contactPicker.manualText = $(this).val();
+  });
+  $(document).on('click', '#rp-imagegen-modal #ig-contact-picker .rp-ig-mini-btn[data-cp-action]', function(e) {
+    e.stopPropagation();
+    const a = $(this).data('cp-action');
+    if (a === 'cancel') mpIgClosePickerAndRepaint();
+    else if (a === 'confirm') mpIgConfirmAddContacts();
   });
   $(document).on('click', '#rp-imagegen-modal .rp-ig-group-head', function(e) {
     e.stopPropagation();
